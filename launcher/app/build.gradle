@@ -6,7 +6,13 @@ android {
     namespace 'com.gathin.tvhome'
     compileSdk 34
 
+    // Optional name for the greeting ("Good evening, Alex"): tvhome.userName=Alex in launcher/local.properties.
+    def localProps = new Properties()
+    def localFile = rootProject.file('local.properties')
+    if (localFile.exists()) localFile.withInputStream { localProps.load(it) }
+
     defaultConfig {
+        resValue 'string', 'user_name', localProps.getProperty('tvhome.userName', '')
         applicationId 'com.gathin.tvhome'
         minSdk 26
         targetSdk 29

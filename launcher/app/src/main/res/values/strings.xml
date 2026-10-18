@@ -16,4 +16,17 @@
     <string name="good_night">Good night</string>
     <string name="ethernet">Ethernet</string>
     <string name="offline">Offline</string>
+    <string name="no_internet">No internet</string>
+    <string name="home_redirect_label">Home screen</string>
+    <string name="screensaver_label">Manhattan</string>
+    <string name="home_redirect_description">Opens this launcher when the Home button is pressed.</string>
+    <string name="use_amazon_home">Use Amazon Home Screen</string>
+    <string name="use_this_home">Use This Home Screen</string>
+    <string name="redirect_needs_permission">Needs a one-time setup from a computer.</string>
+    <string name="pin_to_dock">Pin to Dock</string>
+    <string name="unpin_from_dock">Unpin from Dock</string>
+    <string name="move_left">Move Left</string>
+    <string name="move_right">Move Right</string>
+    <string name="app_info">App Info</string>
+    <string name="dock_full">Dock is full. Unpin an app first.</string>
 </resources>

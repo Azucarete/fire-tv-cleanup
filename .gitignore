@@ -8,3 +8,16 @@ launcher/local.properties
 # your own TV's dumps (serial, android_id, device names) stay local
 backup/
 .DS_Store
+tools/venv/
+tools/adbkey/
+launcher/local.properties
+launcher/.gradle/
+launcher/app/build/
+launcher/build/
+# Trademarked logos drawn locally by tools/make_dock_icons.py
+launcher/app/src/main/res/drawable-nodpi/dock_youtube.png
+launcher/app/src/main/res/drawable-nodpi/dock_netflix.png
+launcher/app/src/main/res/drawable-nodpi/dock_prime.png
+launcher/app/src/main/res/drawable-nodpi/dock_airplay.png
+tools/assets/
+screenshots/
