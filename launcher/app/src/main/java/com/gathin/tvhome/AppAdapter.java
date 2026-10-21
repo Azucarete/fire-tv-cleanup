@@ -10,6 +10,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.KeyEvent;
@@ -97,6 +98,13 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     /** Never shown as tiles (res/values/config.xml, hidden_apps). */
     private final Set<String> hidden;
     private final List<Entry> items = new ArrayList<>();
+    /** App icons already shrunk to tile size, so a return to the launcher does not redo them. */
+    private final Map<String, Drawable> icons = new HashMap<>();
+    /**
+     * Apps ship icons up to 512 px, held in memory (and again as GPU textures) at full size; a tile shows them at
+     * most ~146 px (a 112 px tile magnified 1.3x). Shrunk to this, with headroom, they look the same.
+     */
+    private static final int ICON_MAX_PX = 192;
 
     AppAdapter(Context ctx, TileListener listener, int maxDock) {
         this.ctx = ctx;
@@ -135,7 +143,13 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             ComponentName mainComponent = main != null ? main.getComponent() : null;
             if (mainComponent != null && !mainComponent.getClassName().equals(ri.activityInfo.name)) continue;
             if (!seen.add(pkg)) continue;
-            Drawable icon = ri.loadIcon(pm);
+            // Keyed by the APK path, which changes when the app updates (and may bring a new icon).
+            String iconKey = pkg + "@" + ri.activityInfo.applicationInfo.sourceDir;
+            Drawable icon = icons.get(iconKey);
+            if (icon == null) {
+                icon = shrink(ri.loadIcon(pm));
+                icons.put(iconKey, icon);
+            }
             String label = String.valueOf(ri.loadLabel(pm));
             String squareName = DOCK_ICONS.get(pkg);
             int square = squareName == null ? 0
@@ -273,6 +287,24 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
     String labelAt(int position) {
         return position >= 0 && position < items.size() ? items.get(position).label : "";
+    }
+
+    /** The icon redrawn no larger than ICON_MAX_PX, keeping its shape and transparency. */
+    private Drawable shrink(Drawable d) {
+        int w = d.getIntrinsicWidth(), h = d.getIntrinsicHeight();
+        if (w <= 0 || h <= 0 || Math.max(w, h) <= ICON_MAX_PX) return d;
+        float s = (float) ICON_MAX_PX / Math.max(w, h);
+        int bw = Math.max(1, Math.round(w * s)), bh = Math.max(1, Math.round(h * s));
+        try {
+            Bitmap bmp = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888);
+            Rect saved = new Rect(d.getBounds());
+            d.setBounds(0, 0, bw, bh);
+            d.draw(new Canvas(bmp));
+            d.setBounds(saved);
+            return new BitmapDrawable(ctx.getResources(), bmp);
+        } catch (RuntimeException | OutOfMemoryError e) {
+            return d;
+        }
     }
 
     /** Classifies the icon once: square with opaque corners fills the tile, otherwise it is shown whole. */
