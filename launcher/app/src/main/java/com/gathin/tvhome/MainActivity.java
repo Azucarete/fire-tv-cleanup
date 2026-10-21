@@ -135,6 +135,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         glass = findViewById(R.id.glass);
         ambient = findViewById(R.id.ambient);
         heroName = findViewById(R.id.heroName);
+        // Same weights as res/layout/activity_main.xml and styles.xml (TopButton), which Android 9 ignores.
+        setWeight(heroName, 750);
+        setWeight(findViewById(R.id.greeting), 500);
+        setWeight(findViewById(R.id.clock), 300);
+        setWeight(findViewById(R.id.ampm), 500);
+        setWeight(findViewById(R.id.date), 400);
+        setWeight(findViewById(R.id.btnWifi), 500);
         dockDot = findViewById(R.id.dockDot);
         ambientGlow = new GradientDrawable();
         ambientGlow.setGradientType(GradientDrawable.RADIAL_GRADIENT);
@@ -455,6 +462,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         return true;
     }
 
+    /**
+     * Android 9 (Fire OS 7) drops android:fontVariationSettings set in XML on a resource font (it is not even kept
+     * for getFontVariationSettings), so every weight a layout asks for shows as regular. Set it again in code.
+     */
+    static void setWeight(TextView t, int weight) {
+        if (t != null) t.setFontVariationSettings("'wght' " + weight);
+    }
+
     private static int lcmUpTo(int n) {
         int l = 1;
         for (int i = 2; i <= n; i++) {
@@ -758,6 +773,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, int state, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
+        setWeight(row.findViewById(R.id.title), 500);   // as res/layout/item_input.xml
         ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
         ((TextView) row.findViewById(R.id.title)).setText(title);
         TextView status = row.findViewById(R.id.status);

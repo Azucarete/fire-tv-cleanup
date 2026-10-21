@@ -39,7 +39,7 @@
         android:textColor="#F2FFFFFF"
         android:textSize="12sp"
         android:fontFamily="@font/open_sans"
-        android:fontVariationSettings="'wght' 500"
+        android:fontVariationSettings="'wght' 750"
         android:singleLine="true" />
 
     <LinearLayout
