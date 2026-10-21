@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
-import android.media.tv.TvContract;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
 import android.net.ConnectivityManager;
@@ -43,9 +42,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.dynamicanimation.animation.DynamicAnimation;
-import androidx.dynamicanimation.animation.SpringAnimation;
-import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -55,7 +51,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * tvOS style home: black, a pinned dock row, an app grid, and one glass highlight that springs between tiles.
+ * tvOS style home: a photo background, a pinned dock row and an app grid, focused like a macOS dock.
  */
 public class MainActivity extends Activity implements AppAdapter.TileListener {
 
@@ -67,7 +63,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private AppAdapter adapter;
     private RecyclerView grid;
     private FrameLayout root;
-    private GlassView glass;
     private TextView heroName;
     private View dockDot;
     // macOS dock magnification: focused icon and its neighbours grow from their bottom edge and lift.
@@ -88,9 +83,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private ImageView bgPhoto;
     private int bgRes;
     private TextView btnWifi;
-    private SpringAnimation springX, springY;
-    private float glassTargetX, glassTargetY;
-    private boolean glassShown;
     private int lastFocused = 0;
     private float density;
 
@@ -128,7 +120,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         liveTvPkg = getString(R.string.live_tv_package).trim();
 
         root = findViewById(R.id.root);
-        glass = findViewById(R.id.glass);
         heroName = findViewById(R.id.heroName);
         // Same weights as res/layout/activity_main.xml and styles.xml (TopButton), which Android 9 ignores.
         setWeight(heroName, 750);
@@ -185,16 +176,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         });
 
-        // Keep the glass glued to its tile while the grid scrolls.
         grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
-                if (!glassShown) return;
-                glassTargetY -= dy;
-                if (springY.isRunning()) springY.animateToFinalPosition(glassTargetY);
-                else glass.setTranslationY(glassTargetY);
-            }
-
             // The tooltip is placed where the scroll is expected to end; at the ends of the list the scroll can
             // stop short, so settle it on the tile's real position (a no-op when it already matches).
             @Override
@@ -207,13 +189,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 showHero(lastFocused, cardRect(card, 0));
             }
         });
-
-        // Liquid feel: soft springs on the highlight's position.
-        springX = new SpringAnimation(glass, DynamicAnimation.TRANSLATION_X);
-        springY = new SpringAnimation(glass, DynamicAnimation.TRANSLATION_Y);
-        for (SpringAnimation s : new SpringAnimation[]{springX, springY}) {
-            s.setSpring(new SpringForce().setStiffness(260f).setDampingRatio(0.58f));
-        }
 
         View btnStore = findViewById(R.id.btnStore);
         View btnInputs = findViewById(R.id.btnInputs);
@@ -248,21 +223,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnWifi.setOnKeyListener(pillKeys);
         btnSettings.setOnKeyListener(pillKeys);
 
-        // Hide the glass when focus leaves the tiles.
+        // Hide the name tooltip and reset the magnified row when focus leaves the tiles.
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
             boolean onTile = newF != null && newF.getId() == R.id.card;
-            if (!onTile) {
-                hideGlass();
-                hideHero();
-            }
+            if (!onTile) hideHero();
         });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        glassShown = false;
-        glass.setAlpha(0f);
         heroShown = false;
         heroName.setAlpha(0f);
         dockDot.setAlpha(0f);
@@ -296,7 +266,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // Home screen: Back goes nowhere.
     }
 
-    // ---- glass highlight -------------------------------------------------------------------------
+    // ---- focus ----------------------------------------------------------------------------------
 
     /**
      * Every tile focuses like the dock: it and its row neighbours magnify and lift, and the name tooltip and dot
@@ -306,7 +276,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     public void onTileFocused(int position, View card) {
         lastFocused = position;
-        hideGlass();
         View item = (View) card.getParent();
         int dy;
         if (adapter.isDocked(position)) {
@@ -399,12 +368,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroName.animate().alpha(0f).setDuration(160).start();
         dockDot.animate().alpha(0f).setDuration(160).start();
         magnifyRow(-1);
-    }
-
-    private void hideGlass() {
-        if (!glassShown) return;
-        glassShown = false;
-        glass.animate().alpha(0f).setDuration(160).start();
     }
 
     // ---- navigation ------------------------------------------------------------------------------
@@ -707,13 +670,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 String label = l == null ? info.getId() : l.toString();
                 boolean hdmi = info.getType() == TvInputInfo.TYPE_HDMI;
                 if (hdmi && !label.toUpperCase().contains("HDMI")) label = "HDMI " + label;
+                if (info.getType() == TvInputInfo.TYPE_COMPOSITE) label = getString(R.string.av);
                 final String id = info.getId();
                 int state = tim.getInputState(id);
                 if (!hdmi && rows.getChildCount() > 0 && !sawNonHdmi) addSeparator(rows);
                 if (!hdmi) sawNonHdmi = true;
+                final String rowLabel = label;
                 addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av, label, state,
-                        () -> open(new Intent(Intent.ACTION_VIEW).setDataAndType(
-                                TvContract.buildChannelUriForPassthroughInput(id), "vnd.android.cursor.item/channel")));
+                        () -> open(new Intent(this, InputPlayerActivity.class)
+                                .putExtra(InputPlayerActivity.EXTRA_INPUT_ID, id)
+                                .putExtra(InputPlayerActivity.EXTRA_LABEL, rowLabel)));
             }
         }
         Intent liveTv = liveTvPkg.isEmpty() ? null : getPackageManager().getLeanbackLaunchIntentForPackage(liveTvPkg);

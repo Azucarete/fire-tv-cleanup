@@ -5,6 +5,7 @@
 set -euo pipefail
 source "$(dirname "$0")/win-env.sh"
 tv_reachable
+dock_save
 if [ -d misfondos ]; then
   D=launcher/app/src/debug/res/drawable-nodpi
   mkdir -p "$D"
@@ -15,4 +16,5 @@ if [ -d misfondos ]; then
 fi
 echo "Compilando e instalando el launcher (un par de minutos)..."
 bash launcher/build-and-install.sh
+dock_restore
 echo "Listo: el launcher está instalado en la tele."

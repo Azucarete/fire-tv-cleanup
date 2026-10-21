@@ -84,7 +84,6 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     // transparent corners (SmartTube) is shown as drawn, with no tile behind it; one without a size gets graphite.
     private static final int ICON_FILL = 1, ICON_FIT_EDGE = 2, ICON_FIT_GRAPHITE = 3, ICON_AS_IS = 4;
 
-    static final float FOCUS_SCALE = 1.10f;
     static final float CORNER_RATIO = 0.225f;
 
     private final Context ctx;
@@ -103,14 +102,25 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         this.ctx = ctx;
         this.listener = listener;
         this.maxDock = maxDock;
-        String saved = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(PREF_DOCK, null);
-        pinned.addAll(saved != null
-                ? (saved.isEmpty() ? Collections.emptyList() : Arrays.asList(saved.split(",")))
-                : Arrays.asList(ctx.getResources().getStringArray(R.array.dock_apps)));
         this.hidden = new HashSet<>(Arrays.asList(ctx.getResources().getStringArray(R.array.hidden_apps)));
     }
 
+    /**
+     * Reads the dock order on every reload, not just at start: the Windows helpers restore it from a backup by
+     * rewriting the prefs file over adb, and force-stopping the app to make it re-read would also switch off
+     * its Home redirect (Android drops a force-stopped app's accessibility services).
+     */
+    @SuppressWarnings("deprecation")   // MODE_MULTI_PROCESS: re-reads the file when it changed on disk
+    private void loadPinned() {
+        String saved = ctx.getSharedPreferences(PREFS, Context.MODE_MULTI_PROCESS).getString(PREF_DOCK, null);
+        pinned.clear();
+        pinned.addAll(saved != null
+                ? (saved.isEmpty() ? Collections.emptyList() : Arrays.asList(saved.split(",")))
+                : Arrays.asList(ctx.getResources().getStringArray(R.array.dock_apps)));
+    }
+
     void reload() {
+        loadPinned();
         PackageManager pm = ctx.getPackageManager();
         Intent probe = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
         List<ResolveInfo> found = pm.queryIntentActivities(probe, 0);

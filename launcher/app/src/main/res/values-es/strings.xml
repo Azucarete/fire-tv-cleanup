@@ -31,4 +31,5 @@
     <string name="dock_full">El dock está lleno. Quita una app primero.</string>
     <string name="cant_open">No se puede abrir %1$s</string>
     <string name="not_available">No disponible en esta tele</string>
+    <string name="no_signal">Sin señal en %1$s</string>
 </resources>

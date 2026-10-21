@@ -48,4 +48,5 @@ if [ "$(tv 'settings get secure screensaver_components')" = "$DREAM" ]; then ok 
 else tv "settings put secure screensaver_components $DREAM"; fixed "salvapantallas"
 fi
 echo
+dock_save
 echo "Comprobación terminada."

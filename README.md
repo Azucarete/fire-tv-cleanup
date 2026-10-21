@@ -43,7 +43,8 @@ PC nuevo, acepta en la tele el aviso «¿Permitir depuración USB?».
 |---|---|
 | Fondos | Cambia las fotos de `misfondos/` (`mañana.jpg` 5–12 h, `tarde.jpg` 12–17 h, `atardecer.jpg` 17–22 h, `noche.jpg` 22–5 h; 1920×1080) y ejecuta `instalar.bat`. El salvapantallas usa esas mismas 4 fotos. |
 | Saludo | `tvhome.greeting=` en `launcher/local.properties` (en Java, `¡` se escribe `¡`) y `instalar.bat`. |
-| Dock | En la tele: mantén pulsado OK (o Menú) sobre una app para fijarla, quitarla o moverla. |
+| Dock | En la tele: mantén pulsado OK (o Menú) sobre una app para fijarla, quitarla o moverla. `comprobar.bat` e `instalar.bat` guardan ese orden en `mi-dock.txt`, e `instalar.bat` lo repone si la tele lo ha perdido (por ejemplo, tras restablecerla). |
+| Entradas (HDMI, AV) | Botón del enchufe, arriba a la derecha. La entrada se ve dentro del launcher; Atrás vuelve. La TV en directo (antena) se abre desde Amazon: Fire OS no deja abrir su guía a otras apps. |
 | Número de apps por fila | `columns` en `launcher/app/src/main/res/values/config.xml` y `instalar.bat`. |
 | Ocultar una app | Añade su paquete a `hidden_apps` en el mismo `config.xml` y `instalar.bat`. |
 | Desinstalar una app | En la tele: Menú sobre la app > Info de la app > Desinstalar. Las de sistema de Amazon no se pueden. |
@@ -51,8 +52,12 @@ PC nuevo, acepta en la tele el aviso «¿Permitir depuración USB?».
 
 **Lo que solo está en este PC** (está en `.gitignore`, no se sube a GitHub): las fotos de `misfondos/` y
 `launcher/app/src/debug/`, el saludo de `launcher/local.properties`, el icono cuadrado de Prime Video
-(`dock_prime.png`, dibujado con `tools/make_dock_icons.py`), la IP de `tv-ip.txt` y las copias de seguridad
-de `backup/`. Si borras la carpeta del proyecto se pierden; guarda aparte `misfondos/`.
+(`dock_prime.png`, dibujado con `tools/make_dock_icons.py`), la IP de `tv-ip.txt`, el dock de `mi-dock.txt` y
+las copias de seguridad de `backup/`.
+
+**Al pulsar Inicio** desde una app se ve la pantalla de Amazon unos 3–5 segundos antes de que vuelva el launcher.
+Es una protección de Android (tras pulsar Inicio, durante 5 s solo las apps del sistema pueden abrir pantallas) y
+no se puede saltar. Al encender la tele no pasa: el launcher ya está delante. Si borras la carpeta del proyecto se pierden; guarda aparte `misfondos/`.
 
 **Deshacer**
 - Volver a la pantalla de Amazon: en el launcher, Menú sobre el engranaje > «Usar la pantalla de inicio de
