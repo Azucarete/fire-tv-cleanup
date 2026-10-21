@@ -42,4 +42,19 @@
     <string name="hidden_inputs">Entradas ocultas (%1$d)</string>
     <string name="save">Guardar</string>
     <string name="restart_hint">Encendida desde hace %1$d días · reiníciala para que vaya fluida</string>
+    <string name="sleep_timer">Temporizador de apagado</string>
+    <string name="sleep_minutes">%1$d min</string>
+    <string name="sleep_hours">%1$d h</string>
+    <string name="sleep_hours_minutes">%1$d h %2$d min</string>
+    <string name="sleep_set">La tele se apagará a las %1$s</string>
+    <string name="sleep_cancel">Quitar temporizador (quedan %1$s)</string>
+    <string name="sleep_cancelled">Temporizador quitado</string>
+    <string name="sleep_warning">La tele se apagará dentro de 1 minuto</string>
+    <string name="sleep_failed">No se pudo apagar la tele: el servicio del botón Inicio está desactivado</string>
+    <string name="screensaver_after">Salvapantallas a los %1$s</string>
+    <string name="screensaver_set">El salvapantallas saldrá a los %1$s</string>
+    <string name="offline_title">Sin conexión</string>
+    <string name="offline_body">La tele no está conectada a ninguna red. Para elegir tu Wi-Fi, usa el botón del Wi-Fi de arriba a la derecha.</string>
+    <string name="no_internet_title">Sin internet</string>
+    <string name="no_internet_body">La tele está conectada al Wi-Fi, pero no llega a internet. Prueba a apagar el router y volver a encenderlo.</string>
 </resources>

@@ -59,13 +59,26 @@ public class HomeRedirectService extends AccessibilityService {
         @Override
         public void onReceive(Context context, Intent intent) {
             handler.removeCallbacks(homeCheck);
-            if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) handler.postDelayed(homeCheck, SCREEN_OFF_CHECK_MS);
-            else homeCheck.run();
+            if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+                SleepTimer.cancel(context);   // turned off by hand: the timer is done with
+                handler.postDelayed(homeCheck, SCREEN_OFF_CHECK_MS);
+            } else {
+                homeCheck.run();
+            }
         }
     };
 
+    /** The running service, for the sleep timer; null when it is off. */
+    private static HomeRedirectService running;
+
+    /** Puts the TV to sleep (standby), as the remote's power button does. False when the service isn't running. */
+    static boolean sleepNow() {
+        return running != null && running.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN);
+    }
+
     @Override
     protected void onServiceConnected() {
+        running = this;
         IntentFilter screen = new IntentFilter(Intent.ACTION_SCREEN_ON);
         screen.addAction(Intent.ACTION_SCREEN_OFF);
         registerReceiver(screenOn, screen);
@@ -75,6 +88,7 @@ public class HomeRedirectService extends AccessibilityService {
 
     @Override
     public void onDestroy() {
+        if (running == this) running = null;
         try {
             unregisterReceiver(screenOn);
         } catch (IllegalArgumentException ignored) {

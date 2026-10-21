@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -25,6 +26,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.SpannableString;
+import android.text.format.DateFormat;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.view.Gravity;
@@ -94,6 +96,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private ImageView bgPhoto;
     private int bgRes;
     private TextView btnWifi;
+    private TextView btnSleep;
+    private View offlineCard;
     private int lastFocused = 0;
     private float density;
 
@@ -141,10 +145,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         setWeight(findViewById(R.id.date), 400);
         setWeight(findViewById(R.id.btnWifi), 500);
         setWeight(findViewById(R.id.restartHint), 500);
+        setWeight(findViewById(R.id.btnSleep), 500);
+        setWeight(findViewById(R.id.offlineTitle), 650);
+        setWeight(findViewById(R.id.offlineBody), 450);
         dockDot = findViewById(R.id.dockDot);
         greeting = findViewById(R.id.greeting);
         bgPhoto = findViewById(R.id.bgPhoto);
         btnWifi = findViewById(R.id.btnWifi);
+        btnSleep = findViewById(R.id.btnSleep);
+        offlineCard = findViewById(R.id.offlineCard);
 
         grid = findViewById(R.id.grid);
         // Each column is 108dp wide; centre COLUMNS of them (264dp each side for 4 on a 960dp-wide TV).
@@ -212,6 +221,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnStore.setOnClickListener(v -> open(new Intent(store)));
         final View leftmost = hasStore ? btnStore : btnInputs;
         btnInputs.setOnClickListener(v -> showInputs());
+        btnSleep.setOnClickListener(v -> showSleepTimer());
         btnWifi.setOnClickListener(v -> open(new Intent(Settings.ACTION_WIFI_SETTINGS)));
         btnSettings.setOnClickListener(v -> open(new Intent(Settings.ACTION_SETTINGS)));
         btnSettings.setOnLongClickListener(v -> {
@@ -233,6 +243,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         };
         btnStore.setOnKeyListener(pillKeys);
         btnInputs.setOnKeyListener(pillKeys);
+        btnSleep.setOnKeyListener(pillKeys);
         btnWifi.setOnKeyListener(pillKeys);
         btnSettings.setOnKeyListener(pillKeys);
 
@@ -257,6 +268,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateBackground();
         updateWifiLabel();
         updateRestartHint();
+        updateSleepButton();
         handler.postDelayed(minuteTick, MINUTE_MS);
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         if (cm != null) cm.registerDefaultNetworkCallback(networkCallback);
@@ -273,6 +285,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onPause() {
         super.onPause();
         handler.removeCallbacks(minuteTick);
+        handler.removeCallbacks(sleepTick);
+        handler.removeCallbacks(offlineRecheck);
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         if (cm != null) cm.unregisterNetworkCallback(networkCallback);
     }
@@ -523,6 +537,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             addInputRow(rows, popup, R.drawable.ic_show, getString(R.string.show_hidden_apps, hiddenApps.size()), -1,
                     () -> showHiddenApps(anchor, hiddenApps));
         }
+        addInputRow(rows, popup, R.drawable.ic_screensaver, getString(R.string.screensaver_after, duration(screensaverMinutes())), -1,
+                () -> showScreensaverTimes(anchor));
         popup.showAsDropDown(anchor, anchor.getWidth() - width, (int) (10 * density), Gravity.START);
         rows.getChildAt(0).requestFocus();
     }
@@ -658,9 +674,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         NetworkCapabilities caps = net != null ? cm.getNetworkCapabilities(net) : null;
         if (caps == null) {
             setWifiPill(R.drawable.ic_wifi_off, getString(R.string.offline), COLOR_ERROR);
+            showOfflineCard(R.string.offline_title, R.string.offline_body);
             return;
         }
         boolean online = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        if (online) showOfflineCard(0, 0);
+        else showOfflineCard(R.string.no_internet_title, R.string.no_internet_body);
         if (caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
             setWifiPill(R.drawable.ic_ethernet, online ? getString(R.string.ethernet) : getString(R.string.no_internet),
                     online ? 0 : COLOR_WARN);
@@ -680,19 +699,188 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnWifi.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0);
         btnWifi.setContentDescription(label);
         // Healthy: a round icon button like Inputs and Settings. Alert: a pill with the status text.
-        boolean iconOnly = alertColor == 0;
-        ViewGroup.LayoutParams lp = btnWifi.getLayoutParams();
-        lp.width = iconOnly ? (int) (42 * density) : ViewGroup.LayoutParams.WRAP_CONTENT;
-        btnWifi.setLayoutParams(lp);
-        btnWifi.setPaddingRelative((int) ((iconOnly ? 10 : 16) * density), 0, (int) ((iconOnly ? 10 : 20) * density), 0);
-        btnWifi.setCompoundDrawablePadding(iconOnly ? 0 : (int) (9 * density));
-        if (iconOnly) {
-            btnWifi.setText("");
+        if (alertColor == 0) {
+            setPillText(btnWifi, null);
             return;
         }
         SpannableString text = new SpannableString("\u25CF  " + label);
         text.setSpan(new ForegroundColorSpan(alertColor), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        btnWifi.setText(text);
+        setPillText(btnWifi, text);
+    }
+
+    /** A top button with text is a pill; without (null), a round icon button like Inputs and Settings. */
+    private void setPillText(TextView button, CharSequence text) {
+        boolean iconOnly = text == null;
+        ViewGroup.LayoutParams lp = button.getLayoutParams();
+        lp.width = iconOnly ? (int) (42 * density) : ViewGroup.LayoutParams.WRAP_CONTENT;
+        button.setLayoutParams(lp);
+        button.setPaddingRelative((int) ((iconOnly ? 10 : 16) * density), 0, (int) ((iconOnly ? 10 : 20) * density), 0);
+        button.setCompoundDrawablePadding(iconOnly ? 0 : (int) (9 * density));
+        button.setText(iconOnly ? "" : text);
+    }
+
+    // ---- no internet -----------------------------------------------------------------------------
+
+    // The Wi-Fi pill alone is easy to miss, and apps only say they can't load. After a while without internet a
+    // card in the middle of the screen says so plainly. The wait covers the TV joining Wi-Fi after turning on.
+    private static final long OFFLINE_CARD_DELAY_MS = 20_000;
+    private long offlineSince;   // elapsedRealtime when the connection was first seen down, 0 while online
+    private final Runnable offlineRecheck = this::updateWifiLabel;
+
+    /** Shows the card with these texts once the connection has been down for a while; title 0 hides it. */
+    private void showOfflineCard(int title, int body) {
+        handler.removeCallbacks(offlineRecheck);
+        if (title == 0) {
+            offlineSince = 0;
+            if (offlineCard.getVisibility() == View.VISIBLE) {
+                offlineCard.animate().alpha(0f).setDuration(300)
+                        .withEndAction(() -> offlineCard.setVisibility(View.GONE)).start();
+            }
+            return;
+        }
+        long now = SystemClock.elapsedRealtime();
+        if (offlineSince == 0) offlineSince = now;
+        long wait = offlineSince + OFFLINE_CARD_DELAY_MS - now;
+        if (wait > 0) {
+            handler.postDelayed(offlineRecheck, wait);
+            return;
+        }
+        ((TextView) findViewById(R.id.offlineTitle)).setText(title);
+        ((TextView) findViewById(R.id.offlineBody)).setText(body);
+        if (offlineCard.getVisibility() != View.VISIBLE || offlineCard.getAlpha() < 1f) {
+            offlineCard.setVisibility(View.VISIBLE);
+            offlineCard.animate().alpha(1f).setDuration(400).start();   // cancels a fade-out and its GONE
+        }
+    }
+
+    // ---- sleep timer -----------------------------------------------------------------------------
+
+    private static final int[] SLEEP_MINUTES = {15, 30, 45, 60, 90, 120};
+    private final Runnable sleepTick = this::updateSleepButton;
+
+    /** The moon button shows the time left while a timer is set. */
+    private void updateSleepButton() {
+        handler.removeCallbacks(sleepTick);
+        long left = SleepTimer.remainingMs(this);
+        if (left < 0) {
+            setPillText(btnSleep, null);
+            btnSleep.setContentDescription(getString(R.string.sleep_timer));
+            return;
+        }
+        String text = duration(minutesLeft(left));
+        setPillText(btnSleep, text);
+        btnSleep.setContentDescription(getString(R.string.sleep_timer) + ": " + text);
+        handler.postDelayed(sleepTick, left % MINUTE_MS + 50);   // when the minutes shown go down by one
+    }
+
+    private static int minutesLeft(long ms) {
+        return (int) Math.max(1, (ms + MINUTE_MS - 1) / MINUTE_MS);
+    }
+
+    /** "45 min", "1 h", "1 h 30 min". */
+    private String duration(int minutes) {
+        if (minutes < 60) return getString(R.string.sleep_minutes, minutes);
+        if (minutes % 60 == 0) return getString(R.string.sleep_hours, minutes / 60);
+        return getString(R.string.sleep_hours_minutes, minutes / 60, minutes % 60);
+    }
+
+    /** Dropdown under the moon button: how long until the TV turns off, and a way to call it off. */
+    private void showSleepTimer() {
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        long left = SleepTimer.remainingMs(this);
+        int width = (int) ((left >= 0 ? 340 : 200) * density);   // fits "Quitar temporizador (quedan 1 h 30 min)"
+        final PopupWindow popup = new PopupWindow(panel, width, ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        popup.setOutsideTouchable(true);
+        popup.setAnimationStyle(0);
+        popup.setElevation(0f);
+        if (left >= 0) {
+            addInputRow(rows, popup, R.drawable.ic_close, getString(R.string.sleep_cancel, duration(minutesLeft(left))), -1, () -> {
+                SleepTimer.cancel(this);
+                updateSleepButton();
+                Toast.makeText(this, R.string.sleep_cancelled, Toast.LENGTH_SHORT).show();
+            });
+            addSeparator(rows);
+        }
+        for (int minutes : SLEEP_MINUTES) {
+            addInputRow(rows, popup, R.drawable.ic_schedule, duration(minutes), -1, () -> {
+                SleepTimer.set(this, minutes);
+                updateSleepButton();
+                // Same format as the clock (res/layout/activity_main.xml): "01:00", not "1:00".
+                String at = DateFormat.format(DateFormat.is24HourFormat(this) ? "HH:mm" : "h:mm a",
+                        System.currentTimeMillis() + minutes * MINUTE_MS).toString();
+                Toast.makeText(this, getString(R.string.sleep_set, at), Toast.LENGTH_LONG).show();
+            });
+        }
+        panel.setAlpha(0f);
+        panel.setPivotY(0f);
+        panel.setScaleY(0.92f);
+        panel.setTranslationY(-8 * density);
+        popup.showAsDropDown(btnSleep, dropDownX(btnSleep, width), (int) (10 * density), Gravity.START);
+        panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(220)
+                .setInterpolator(new DecelerateInterpolator(1.6f)).start();
+        rows.getChildAt(0).requestFocus();
+    }
+
+    // ---- screensaver start time ------------------------------------------------------------------
+
+    private static final int[] SCREENSAVER_MINUTES = {5, 10, 15, 30};
+    private static final int DEFAULT_SCREEN_OFF_MS = 300_000;
+    // Amazon's copy of screen_off_timeout (secure table), kept in step by its own Settings app.
+    private static final String CONTEXTUAL_SCREEN_OFF = "contextual_screen_off_timeout";
+    // Settings.Secure.SLEEP_TIMEOUT, hidden from apps: standby this long after the last key press.
+    private static final String SLEEP_TIMEOUT = "sleep_timeout";
+
+    private int screensaverMinutes() {
+        return Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, DEFAULT_SCREEN_OFF_MS)
+                / (int) MINUTE_MS;
+    }
+
+    /** Under the Settings button's menu: how long without a key press before the screensaver starts. */
+    private void showScreensaverTimes(View anchor) {
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        int width = (int) (200 * density);
+        final PopupWindow popup = new PopupWindow(panel, width, ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        popup.setOutsideTouchable(true);
+        popup.setAnimationStyle(0);
+        popup.setElevation(0f);
+        int current = screensaverMinutes();
+        int focus = 0;
+        for (int minutes : SCREENSAVER_MINUTES) {
+            if (minutes == current) focus = rows.getChildCount();
+            addInputRow(rows, popup, minutes == current ? R.drawable.ic_check : R.drawable.ic_schedule, duration(minutes), -1, () -> {
+                if (setScreensaverMinutes(minutes)) {
+                    Toast.makeText(this, getString(R.string.screensaver_set, duration(minutes)), Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, R.string.redirect_needs_permission, Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+        popup.showAsDropDown(anchor, anchor.getWidth() - width, (int) (10 * density), Gravity.START);
+        rows.getChildAt(focus).requestFocus();
+    }
+
+    /**
+     * Sets the screensaver start time. The TV goes to standby sleep_timeout after the last key press, screensaver
+     * or not, so that moves by the same amount: the screensaver then runs as long as before. Needs
+     * WRITE_SECURE_SETTINGS, which also covers the system table; false without it.
+     */
+    private boolean setScreensaverMinutes(int minutes) {
+        ContentResolver cr = getContentResolver();
+        int old = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, DEFAULT_SCREEN_OFF_MS);
+        int ms = minutes * (int) MINUTE_MS;
+        try {
+            Settings.System.putInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, ms);
+            if (Settings.Secure.getString(cr, CONTEXTUAL_SCREEN_OFF) != null) Settings.Secure.putInt(cr, CONTEXTUAL_SCREEN_OFF, ms);
+            int sleep = Settings.Secure.getInt(cr, SLEEP_TIMEOUT, -1);
+            if (sleep > 0) Settings.Secure.putInt(cr, SLEEP_TIMEOUT, Math.max(ms, sleep + ms - old));
+            return true;
+        } catch (SecurityException e) {
+            return false;
+        }
     }
 
     private void open(Intent i) {

@@ -151,6 +151,14 @@
                     android:drawableStart="@drawable/ic_input"
                     android:nextFocusDown="@+id/grid" />
 
+                <!-- Sleep timer: a round moon button, or a pill with the minutes left while one is set. -->
+                <TextView
+                    android:id="@+id/btnSleep"
+                    style="@style/TopIconButton"
+                    android:contentDescription="@string/sleep_timer"
+                    android:drawableStart="@drawable/ic_sleep"
+                    android:nextFocusDown="@+id/grid" />
+
                 <TextView
                     android:id="@+id/btnWifi"
                     style="@style/TopButton"
@@ -205,6 +213,53 @@
                 android:scrollbars="none"
                 android:descendantFocusability="afterDescendants" />
         </FrameLayout>
+    </LinearLayout>
+
+    <!-- Shown in code when the TV has been without internet for a few seconds; the Wi-Fi pill alone is easy to miss. -->
+    <LinearLayout
+        android:id="@+id/offlineCard"
+        android:layout_width="460dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginBottom="40dp"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:background="@drawable/glass_panel"
+        android:paddingStart="36dp"
+        android:paddingEnd="36dp"
+        android:paddingTop="28dp"
+        android:paddingBottom="30dp"
+        android:alpha="0"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/offlineIcon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_wifi_off"
+            android:importantForAccessibility="no" />
+
+        <TextView
+            android:id="@+id/offlineTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:textColor="#FFFFFFFF"
+            android:textSize="26sp"
+            android:fontFamily="@font/open_sans"
+            android:fontVariationSettings="'wght' 650" />
+
+        <TextView
+            android:id="@+id/offlineBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:lineSpacingExtra="3dp"
+            android:textColor="#B3FFFFFF"
+            android:textSize="15sp"
+            android:fontFamily="@font/open_sans"
+            android:fontVariationSettings="'wght' 450" />
     </LinearLayout>
 
     <!-- Dot under the focused dock icon, positioned in code. -->

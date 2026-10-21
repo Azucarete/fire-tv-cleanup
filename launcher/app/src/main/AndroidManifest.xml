@@ -54,6 +54,11 @@
             </intent-filter>
         </service>
 
+        <!-- Sleep timer alarms: a warning a minute before, then the TV goes to sleep. -->
+        <receiver
+            android:name=".SleepTimer"
+            android:exported="false" />
+
         <!-- Opens this launcher whenever Amazon's home screen comes up. Enabled over adb, see the class. -->
         <service
             android:name=".HomeRedirectService"

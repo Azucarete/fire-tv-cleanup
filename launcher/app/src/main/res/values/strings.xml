@@ -44,4 +44,19 @@
     <string name="hidden_inputs">Hidden Inputs (%1$d)</string>
     <string name="save">Save</string>
     <string name="restart_hint">On for %1$d days · restart the TV to keep it smooth</string>
+    <string name="sleep_timer">Sleep Timer</string>
+    <string name="sleep_minutes">%1$d min</string>
+    <string name="sleep_hours">%1$d h</string>
+    <string name="sleep_hours_minutes">%1$d h %2$d min</string>
+    <string name="sleep_set">The TV will turn off at %1$s</string>
+    <string name="sleep_cancel">Turn Off Timer (%1$s left)</string>
+    <string name="sleep_cancelled">Sleep timer off</string>
+    <string name="sleep_warning">The TV will turn off in 1 minute</string>
+    <string name="sleep_failed">Couldn\'t turn the TV off: the Home button service is off</string>
+    <string name="screensaver_after">Screensaver after %1$s</string>
+    <string name="screensaver_set">The screensaver will start after %1$s</string>
+    <string name="offline_title">Not connected</string>
+    <string name="offline_body">The TV isn\'t connected to any network. To pick a Wi-Fi network, use the Wi-Fi button at the top right.</string>
+    <string name="no_internet_title">No internet</string>
+    <string name="no_internet_body">The TV is connected to Wi-Fi but can\'t reach the internet. Try turning the router off and on again.</string>
 </resources>

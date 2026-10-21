@@ -48,6 +48,9 @@ PC nuevo, acepta en la tele el aviso «¿Permitir depuración USB?».
 | Entradas (HDMI, AV) | Botón del enchufe, arriba a la derecha. La entrada se ve dentro del launcher; Atrás vuelve. Para ponerle nombre (PlayStation, Xbox…) u ocultarla, pulsa Menú sobre ella; las ocultas se recuperan al final del menú. La TV en directo (antena) se abre desde Amazon: Fire OS no deja abrir su guía a otras apps. |
 | Número de apps por fila | `columns` en `launcher/app/src/main/res/values/config.xml` y `instalar.bat`. |
 | Ocultar una app | En la tele: Menú sobre la app > Ocultar app. Para recuperarla: Menú sobre el engranaje > Apps ocultas. |
+| Temporizador de apagado | Botón de la luna, arriba a la derecha: 15 min a 2 h. El botón muestra lo que falta; un minuto antes avisa, y funciona aunque estés en otra app. Para quitarlo, vuelve a pulsar la luna. Si apagas la tele a mano, el temporizador se borra. |
+| Tiempo del salvapantallas | En la tele: Menú sobre el engranaje > «Salvapantallas a los…» (5, 10, 15 o 30 min). La tele se apaga sola unos 9 min después de que salga el salvapantallas, igual que antes. |
+| Aviso de «sin internet» | Si la tele lleva 20 s sin internet, sale un aviso grande en el centro con qué pasa y qué probar. Desaparece solo al volver la conexión. |
 | Aviso de reinicio | Si la tele lleva 7 días o más sin reiniciarse, aparece un aviso bajo el reloj. Desaparece al reiniciarla. |
 | Desinstalar una app | En la tele: Menú sobre la app > Info de la app > Desinstalar. Las de sistema de Amazon no se pueden. |
 | Instalar una app | Botón de la bolsa (arriba a la derecha) para la tienda de Amazon, o Downloader para APKs. |
