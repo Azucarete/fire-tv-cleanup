@@ -29,3 +29,5 @@ tools/iconvenv/
 tv-ip.txt
 # Dock order saved from the TV by instalar.bat / comprobar.bat
 mi-dock.txt
+# Notes for Claude Code, local to this PC
+CLAUDE.md
