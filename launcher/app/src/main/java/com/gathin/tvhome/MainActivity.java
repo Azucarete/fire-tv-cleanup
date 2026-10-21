@@ -1,10 +1,12 @@
 package com.gathin.tvhome;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
@@ -20,6 +22,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -29,11 +32,14 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.WindowManager;
 import android.view.animation.AnimationUtils;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 import android.view.animation.PathInterpolator;
 import android.view.animation.LayoutAnimationController;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -46,9 +52,14 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * tvOS style home: a photo background, a pinned dock row and an app grid, focused like a macOS dock.
@@ -107,6 +118,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             updateGreeting();
             updateBackground();
             updateWifiLabel();
+            updateRestartHint();
             handler.postDelayed(this, MINUTE_MS);
         }
     };
@@ -128,6 +140,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         setWeight(findViewById(R.id.ampm), 500);
         setWeight(findViewById(R.id.date), 400);
         setWeight(findViewById(R.id.btnWifi), 500);
+        setWeight(findViewById(R.id.restartHint), 500);
         dockDot = findViewById(R.id.dockDot);
         greeting = findViewById(R.id.greeting);
         bgPhoto = findViewById(R.id.bgPhoto);
@@ -243,6 +256,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateGreeting();
         updateBackground();
         updateWifiLabel();
+        updateRestartHint();
         handler.postDelayed(minuteTick, MINUTE_MS);
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         if (cm != null) cm.registerDefaultNetworkCallback(networkCallback);
@@ -455,6 +469,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 else Toast.makeText(this, R.string.dock_full, Toast.LENGTH_SHORT).show();
             });
         }
+        addInputRow(rows, popup, R.drawable.ic_hide, getString(R.string.hide_app), -1, () -> {
+            String label = adapter.labelAt(position);
+            String next = adapter.pkgAt(position + 1);
+            if (next.isEmpty()) next = adapter.pkgAt(position - 1);
+            adapter.hide(pkg);
+            focusAfterLayout(next);
+            Toast.makeText(this, getString(R.string.app_hidden, label), Toast.LENGTH_LONG).show();
+        });
         // CLEAR_TASK: Fire OS's app-info screen is single-top, so without it a copy left in the background comes
         // back still showing the app it was opened for last time.
         addInputRow(rows, popup, R.drawable.ic_info, getString(R.string.app_info), -1, () ->
@@ -484,7 +506,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void showHomeScreenMenu(View anchor) {
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
-        int width = (int) (290 * density);
+        int width = (int) (370 * density);   // fits "Usar la pantalla de inicio de Amazon"
         final PopupWindow popup = new PopupWindow(panel, width, ViewGroup.LayoutParams.WRAP_CONTENT, true);
         popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         popup.setOutsideTouchable(true);
@@ -496,6 +518,31 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 Toast.makeText(this, R.string.redirect_needs_permission, Toast.LENGTH_LONG).show();
             }
         });
+        Map<String, String> hiddenApps = adapter.hiddenApps();
+        if (!hiddenApps.isEmpty()) {
+            addInputRow(rows, popup, R.drawable.ic_show, getString(R.string.show_hidden_apps, hiddenApps.size()), -1,
+                    () -> showHiddenApps(anchor, hiddenApps));
+        }
+        popup.showAsDropDown(anchor, anchor.getWidth() - width, (int) (10 * density), Gravity.START);
+        rows.getChildAt(0).requestFocus();
+    }
+
+    /** Apps hidden on the TV, under the Settings button: picking one puts it back on the grid. */
+    private void showHiddenApps(View anchor, Map<String, String> hiddenApps) {
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        int width = (int) (290 * density);
+        final PopupWindow popup = new PopupWindow(panel, width, ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        popup.setOutsideTouchable(true);
+        popup.setAnimationStyle(0);
+        popup.setElevation(0f);
+        for (Map.Entry<String, String> app : hiddenApps.entrySet()) {
+            addInputRow(rows, popup, R.drawable.ic_show, app.getValue(), -1, () -> {
+                adapter.unhide(app.getKey());
+                focusAfterLayout(app.getKey());
+            });
+        }
         popup.showAsDropDown(anchor, anchor.getWidth() - width, (int) (10 * density), Gravity.START);
         rows.getChildAt(0).requestFocus();
     }
@@ -559,6 +606,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (hour < 17) return 1;
         if (hour < 22) return 2;
         return 3;
+    }
+
+    // After a week switched on (standby counts), memory on this 1.7 GB TV is mostly used up and swapping;
+    // a restart frees it. A quiet reminder under the clock, gone once the TV has been restarted.
+    private static final int RESTART_HINT_DAYS = 7;
+
+    private void updateRestartHint() {
+        TextView hint = findViewById(R.id.restartHint);
+        int days = (int) (SystemClock.elapsedRealtime() / 86_400_000L);
+        if (days >= RESTART_HINT_DAYS) {
+            hint.setText(getString(R.string.restart_hint, days));
+            hint.setVisibility(View.VISIBLE);
+        } else {
+            hint.setVisibility(View.GONE);
+        }
     }
 
     private void updateGreeting() {
@@ -648,8 +710,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
 
-        // Compact: as wide as the Inputs pill (a touch wider so "HDMI 1" fits), hanging right below it.
-        int width = Math.max(anchor.getWidth(), (int) (150 * density));
+        // Hanging right below the Inputs pill, wide enough for a renamed input ("Consola de juegos").
+        int width = Math.max(anchor.getWidth(), (int) (210 * density));
         final PopupWindow popup = new PopupWindow(panel, width, ViewGroup.LayoutParams.WRAP_CONTENT, true);
         popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));   // needed for Back to dismiss
         popup.setOutsideTouchable(true);
@@ -658,6 +720,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         boolean sawNonHdmi = false;
+        Set<String> hiddenInputs = hiddenInputs();
+        Map<String, String> hiddenNames = new LinkedHashMap<>();   // id -> name shown, for the hidden-inputs menu
         if (tim != null) {
             List<TvInputInfo> inputs = new ArrayList<>(tim.getTvInputList());
             // HDMI ports first in port order, then AV and the rest.
@@ -674,20 +738,32 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 if (hdmi && !label.toUpperCase().contains("HDMI")) label = "HDMI " + label;
                 if (info.getType() == TvInputInfo.TYPE_COMPOSITE) label = getString(R.string.av);
                 final String id = info.getId();
+                final String portLabel = label;
+                String custom = prefs().getString(PREF_INPUT_NAME + id, null);
+                final String rowLabel = custom != null ? custom : label;
+                if (hiddenInputs.contains(id)) {
+                    hiddenNames.put(id, rowLabel);
+                    continue;
+                }
                 int state = tim.getInputState(id);
                 if (!hdmi && rows.getChildCount() > 0 && !sawNonHdmi) addSeparator(rows);
                 if (!hdmi) sawNonHdmi = true;
-                final String rowLabel = label;
-                addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av, label, state,
+                addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av, rowLabel, state,
                         () -> open(new Intent(this, InputPlayerActivity.class)
                                 .putExtra(InputPlayerActivity.EXTRA_INPUT_ID, id)
-                                .putExtra(InputPlayerActivity.EXTRA_LABEL, rowLabel)));
+                                .putExtra(InputPlayerActivity.EXTRA_LABEL, rowLabel)),
+                        () -> showInputOptions(id, portLabel, rowLabel, custom != null));
             }
         }
         Intent liveTv = liveTvPkg.isEmpty() ? null : getPackageManager().getLeanbackLaunchIntentForPackage(liveTvPkg);
         if (liveTv != null) {
             if (rows.getChildCount() > 0) addSeparator(rows);
             addInputRow(rows, popup, R.drawable.ic_livetv, getString(R.string.live_tv), -1, () -> open(liveTv));
+        }
+        if (!hiddenNames.isEmpty()) {
+            if (rows.getChildCount() > 0) addSeparator(rows);
+            addInputRow(rows, popup, R.drawable.ic_show, getString(R.string.hidden_inputs, hiddenNames.size()), -1,
+                    () -> showHiddenInputs(hiddenNames));
         }
         if (rows.getChildCount() == 0) {
             Toast.makeText(this, R.string.no_inputs, Toast.LENGTH_SHORT).show();
@@ -699,7 +775,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         panel.setPivotY(0f);
         panel.setScaleY(0.92f);
         panel.setTranslationY(-8 * density);
-        popup.showAsDropDown(anchor, 0, (int) (10 * density), Gravity.START);
+        popup.showAsDropDown(anchor, dropDownX(anchor, width), (int) (10 * density), Gravity.START);
         panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(220)
                 .setInterpolator(new android.view.animation.DecelerateInterpolator(1.6f)).start();
         rows.getChildAt(0).requestFocus();
@@ -714,7 +790,127 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         rows.addView(line, lp);
     }
 
+    // ---- inputs: names and hiding, edited on the TV ----------------------------------------------
+
+    // What is plugged into each port changes, so names and hidden ports are set from the Inputs menu (Menu or
+    // hold OK on a port) and saved on the device rather than in config.xml.
+    private static final String PREF_INPUT_NAME = "input_name:";   // + input id
+    private static final String PREF_INPUTS_HIDDEN = "inputs_hidden";
+
+    private SharedPreferences prefs() {
+        return getSharedPreferences("tvhome", MODE_PRIVATE);
+    }
+
+    private Set<String> hiddenInputs() {
+        String saved = prefs().getString(PREF_INPUTS_HIDDEN, "");
+        return saved.isEmpty() ? new LinkedHashSet<>() : new LinkedHashSet<>(Arrays.asList(saved.split(",")));
+    }
+
+    private void setInputHidden(String id, boolean hide) {
+        Set<String> hidden = hiddenInputs();
+        if (hide) hidden.add(id);
+        else hidden.remove(id);
+        prefs().edit().putString(PREF_INPUTS_HIDDEN, String.join(",", hidden)).apply();
+    }
+
+    /** Menu on one input: rename it, go back to its port name, or hide it. Reopens the Inputs menu after. */
+    private void showInputOptions(String id, String portLabel, String shown, boolean renamed) {
+        View anchor = findViewById(R.id.btnInputs);
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        int width = Math.max(anchor.getWidth(), (int) (280 * density));   // fits "Nombre original (HDMI 1)"
+        final PopupWindow popup = new PopupWindow(panel, width, ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        popup.setOutsideTouchable(true);
+        popup.setAnimationStyle(0);
+        popup.setElevation(0f);
+        addInputRow(rows, popup, R.drawable.ic_edit, getString(R.string.rename_input), -1,
+                () -> renameInput(id, portLabel, shown));
+        if (renamed) {
+            addInputRow(rows, popup, R.drawable.ic_input, getString(R.string.reset_name) + " (" + portLabel + ")", -1, () -> {
+                prefs().edit().remove(PREF_INPUT_NAME + id).apply();
+                showInputs();
+            });
+        }
+        addInputRow(rows, popup, R.drawable.ic_hide, getString(R.string.hide_input), -1, () -> {
+            setInputHidden(id, true);
+            showInputs();
+        });
+        popup.showAsDropDown(anchor, dropDownX(anchor, width), (int) (10 * density), Gravity.START);
+        rows.getChildAt(0).requestFocus();
+    }
+
+    /** A text box for the input's name, typed with the TV's on-screen keyboard. Empty goes back to the port name. */
+    private void renameInput(String id, String portLabel, String shown) {
+        EditText edit = new EditText(this);
+        edit.setSingleLine(true);
+        edit.setText(shown);
+        edit.setSelection(shown.length());
+        edit.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        FrameLayout box = new FrameLayout(this);
+        int pad = (int) (20 * density);
+        box.setPadding(pad, pad / 2, pad, 0);
+        box.addView(edit);
+        Runnable save = () -> {
+            String name = edit.getText().toString().trim();
+            if (name.isEmpty() || name.equals(portLabel)) prefs().edit().remove(PREF_INPUT_NAME + id).apply();
+            else prefs().edit().putString(PREF_INPUT_NAME + id, name).apply();
+            showInputs();
+        };
+        AlertDialog dialog = new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                .setTitle(getString(R.string.rename_title, portLabel))
+                .setView(box)
+                .setPositiveButton(R.string.save, (d, w) -> save.run())
+                .setNegativeButton(android.R.string.cancel, null)
+                .create();
+        // The TV keyboard's own button ("Siguiente") saves too: closing the keyboard leaves focus on Cancel.
+        edit.setOnEditorActionListener((v, actionId, event) -> {
+            dialog.dismiss();
+            save.run();
+            return true;
+        });
+        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        dialog.show();
+        edit.requestFocus();
+    }
+
+    /** x offset that keeps a dropdown of this width on screen when its anchor sits near the right edge. */
+    private int dropDownX(View anchor, int width) {
+        int[] at = new int[2];
+        anchor.getLocationOnScreen(at);
+        int margin = (int) (24 * density);
+        int overflow = at[0] + width - (root.getWidth() - margin);
+        return overflow > 0 ? -overflow : 0;
+    }
+
+    /** Hidden inputs, at the end of the Inputs menu: picking one shows it again. */
+    private void showHiddenInputs(Map<String, String> hiddenNames) {
+        View anchor = findViewById(R.id.btnInputs);
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        int width = Math.max(anchor.getWidth(), (int) (210 * density));
+        final PopupWindow popup = new PopupWindow(panel, width, ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        popup.setOutsideTouchable(true);
+        popup.setAnimationStyle(0);
+        popup.setElevation(0f);
+        for (Map.Entry<String, String> input : hiddenNames.entrySet()) {
+            addInputRow(rows, popup, R.drawable.ic_show, input.getValue(), -1, () -> {
+                setInputHidden(input.getKey(), false);
+                showInputs();
+            });
+        }
+        popup.showAsDropDown(anchor, dropDownX(anchor, width), (int) (10 * density), Gravity.START);
+        rows.getChildAt(0).requestFocus();
+    }
+
     private void addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, int state, Runnable action) {
+        addInputRow(rows, popup, iconRes, title, state, action, null);
+    }
+
+    /** A menu row; onMenu, if given, runs on the remote's Menu key or a long press of OK. */
+    private void addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, int state, Runnable action,
+                             Runnable onMenu) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
         setWeight(row.findViewById(R.id.title), 500);   // as res/layout/item_input.xml
         ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
@@ -737,6 +933,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             popup.dismiss();
             action.run();
         });
+        if (onMenu != null) {
+            row.setOnLongClickListener(v -> {
+                popup.dismiss();
+                onMenu.run();
+                return true;
+            });
+            row.setOnKeyListener((v, keyCode, event) -> {
+                if (keyCode != KeyEvent.KEYCODE_MENU) return false;
+                if (event.getAction() == KeyEvent.ACTION_UP) {
+                    popup.dismiss();
+                    onMenu.run();
+                }
+                return true;
+            });
+        }
         rows.addView(row);
     }
 }

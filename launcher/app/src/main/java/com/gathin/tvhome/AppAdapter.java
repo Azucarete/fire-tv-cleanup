@@ -3,6 +3,7 @@ package com.gathin.tvhome;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
@@ -31,6 +32,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -91,12 +94,15 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     private final TileListener listener;
     private static final String PREFS = "tvhome";
     private static final String PREF_DOCK = "dock";
+    private static final String PREF_HIDDEN = "hidden";
     private final int maxDock;
     private int dockCount;
     /** Pinned packages in dock order, including any that are not installed right now. */
     private final List<String> pinned = new ArrayList<>();
     /** Never shown as tiles (res/values/config.xml, hidden_apps). */
     private final Set<String> hidden;
+    /** Hidden on the TV (Menu on an app > Hide), saved on the device; shown again from the Settings button menu. */
+    private final Set<String> hiddenByUser = new LinkedHashSet<>();
     private final List<Entry> items = new ArrayList<>();
     /** App icons already shrunk to tile size, so a return to the launcher does not redo them. */
     private final Map<String, Drawable> icons = new HashMap<>();
@@ -120,11 +126,15 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
      */
     @SuppressWarnings("deprecation")   // MODE_MULTI_PROCESS: re-reads the file when it changed on disk
     private void loadPinned() {
-        String saved = ctx.getSharedPreferences(PREFS, Context.MODE_MULTI_PROCESS).getString(PREF_DOCK, null);
+        SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_MULTI_PROCESS);
+        String saved = prefs.getString(PREF_DOCK, null);
         pinned.clear();
         pinned.addAll(saved != null
                 ? (saved.isEmpty() ? Collections.emptyList() : Arrays.asList(saved.split(",")))
                 : Arrays.asList(ctx.getResources().getStringArray(R.array.dock_apps)));
+        String hiddenSaved = prefs.getString(PREF_HIDDEN, "");
+        hiddenByUser.clear();
+        if (!hiddenSaved.isEmpty()) hiddenByUser.addAll(Arrays.asList(hiddenSaved.split(",")));
     }
 
     void reload() {
@@ -137,7 +147,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         for (ResolveInfo ri : found) {
             if (ri.activityInfo == null) continue;
             String pkg = ri.activityInfo.packageName;
-            if (pkg.equals(ctx.getPackageName()) || hidden.contains(pkg)) continue;
+            if (pkg.equals(ctx.getPackageName()) || hidden.contains(pkg) || hiddenByUser.contains(pkg)) continue;
             // One tile per app: skip extra launcher entries (AirPlay registers three).
             Intent main = pm.getLeanbackLaunchIntentForPackage(pkg);
             ComponentName mainComponent = main != null ? main.getComponent() : null;
@@ -216,9 +226,39 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         saveAndReload();
     }
 
+    /** Takes the app off the grid (and the dock) until it is shown again from the Settings button menu. */
+    void hide(String pkg) {
+        pinned.remove(pkg);
+        hiddenByUser.add(pkg);
+        saveAndReload();
+    }
+
+    void unhide(String pkg) {
+        hiddenByUser.remove(pkg);
+        saveAndReload();
+    }
+
+    /** Apps hidden on the TV that are still installed, as package name to label, by label. */
+    Map<String, String> hiddenApps() {
+        PackageManager pm = ctx.getPackageManager();
+        List<String[]> found = new ArrayList<>();
+        for (String pkg : hiddenByUser) {
+            try {
+                found.add(new String[]{pkg, String.valueOf(pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)))});
+            } catch (PackageManager.NameNotFoundException ignored) {
+                // Uninstalled since: nothing to show.
+            }
+        }
+        Collections.sort(found, (a, b) -> a[1].compareToIgnoreCase(b[1]));
+        Map<String, String> out = new LinkedHashMap<>();
+        for (String[] f : found) out.put(f[0], f[1]);
+        return out;
+    }
+
     private void saveAndReload() {
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-                .putString(PREF_DOCK, String.join(",", pinned)).apply();
+                .putString(PREF_DOCK, String.join(",", pinned))
+                .putString(PREF_HIDDEN, String.join(",", hiddenByUser)).apply();
         reload();
     }
 

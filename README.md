@@ -45,9 +45,10 @@ PC nuevo, acepta en la tele el aviso «¿Permitir depuración USB?».
 | Fondos | Cambia las fotos de `misfondos/` (`mañana.jpg` 5–12 h, `tarde.jpg` 12–17 h, `atardecer.jpg` 17–22 h, `noche.jpg` 22–5 h; 1920×1080) y ejecuta `instalar.bat`. El salvapantallas usa esas mismas 4 fotos. |
 | Saludo | `tvhome.greeting=` en `launcher/local.properties` (en Java, `¡` se escribe `¡`) y `instalar.bat`. |
 | Dock | En la tele: mantén pulsado OK (o Menú) sobre una app para fijarla, quitarla o moverla. `comprobar.bat` e `instalar.bat` guardan ese orden en `mi-dock.txt`, e `instalar.bat` lo repone si la tele lo ha perdido (por ejemplo, tras restablecerla). |
-| Entradas (HDMI, AV) | Botón del enchufe, arriba a la derecha. La entrada se ve dentro del launcher; Atrás vuelve. La TV en directo (antena) se abre desde Amazon: Fire OS no deja abrir su guía a otras apps. |
+| Entradas (HDMI, AV) | Botón del enchufe, arriba a la derecha. La entrada se ve dentro del launcher; Atrás vuelve. Para ponerle nombre (PlayStation, Xbox…) u ocultarla, pulsa Menú sobre ella; las ocultas se recuperan al final del menú. La TV en directo (antena) se abre desde Amazon: Fire OS no deja abrir su guía a otras apps. |
 | Número de apps por fila | `columns` en `launcher/app/src/main/res/values/config.xml` y `instalar.bat`. |
-| Ocultar una app | Añade su paquete a `hidden_apps` en el mismo `config.xml` y `instalar.bat`. |
+| Ocultar una app | En la tele: Menú sobre la app > Ocultar app. Para recuperarla: Menú sobre el engranaje > Apps ocultas. |
+| Aviso de reinicio | Si la tele lleva 7 días o más sin reiniciarse, aparece un aviso bajo el reloj. Desaparece al reiniciarla. |
 | Desinstalar una app | En la tele: Menú sobre la app > Info de la app > Desinstalar. Las de sistema de Amazon no se pueden. |
 | Instalar una app | Botón de la bolsa (arriba a la derecha) para la tienda de Amazon, o Downloader para APKs. |
 

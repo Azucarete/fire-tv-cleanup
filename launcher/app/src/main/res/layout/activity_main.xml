@@ -165,6 +165,23 @@
                     android:drawableStart="@drawable/ic_settings"
                     android:nextFocusDown="@+id/grid" />
             </LinearLayout>
+
+            <!-- Shown when the TV has been on for a week: on 1.7 GB of RAM a restart frees a lot. Set in code. -->
+            <TextView
+                android:id="@+id/restartHint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/leftBlock"
+                android:layout_alignParentStart="true"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="10dp"
+                android:drawableStart="@drawable/ic_restart"
+                android:drawablePadding="8dp"
+                android:gravity="center_vertical"
+                android:textColor="#B3FFFFFF"
+                android:textSize="13sp"
+                android:fontFamily="@font/open_sans"
+                android:visibility="gone" />
         </RelativeLayout>
 
         <!-- The wrapper clips at the grid's edge; the grid itself must not clip so scaled tiles can overflow their cells. -->

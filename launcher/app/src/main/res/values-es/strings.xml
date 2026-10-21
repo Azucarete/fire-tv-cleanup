@@ -32,4 +32,14 @@
     <string name="cant_open">No se puede abrir %1$s</string>
     <string name="not_available">No disponible en esta tele</string>
     <string name="no_signal">Sin señal en %1$s</string>
+    <string name="hide_app">Ocultar app</string>
+    <string name="app_hidden">%1$s está oculta. Para recuperarla, pulsa Menú sobre el engranaje.</string>
+    <string name="show_hidden_apps">Apps ocultas (%1$d)</string>
+    <string name="rename_input">Cambiar nombre</string>
+    <string name="rename_title">Nombre para %1$s</string>
+    <string name="reset_name">Nombre original</string>
+    <string name="hide_input">Ocultar entrada</string>
+    <string name="hidden_inputs">Entradas ocultas (%1$d)</string>
+    <string name="save">Guardar</string>
+    <string name="restart_hint">Encendida desde hace %1$d días · reiníciala para que vaya fluida</string>
 </resources>

@@ -34,4 +34,14 @@
     <string name="appstore">Appstore</string>
     <string name="av">AV</string>
     <string name="no_signal">No signal on %1$s</string>
+    <string name="hide_app">Hide App</string>
+    <string name="app_hidden">%1$s is hidden. To show it again, press Menu on the Settings button.</string>
+    <string name="show_hidden_apps">Hidden Apps (%1$d)</string>
+    <string name="rename_input">Rename</string>
+    <string name="rename_title">Name for %1$s</string>
+    <string name="reset_name">Original Name</string>
+    <string name="hide_input">Hide Input</string>
+    <string name="hidden_inputs">Hidden Inputs (%1$d)</string>
+    <string name="save">Save</string>
+    <string name="restart_hint">On for %1$d days · restart the TV to keep it smooth</string>
 </resources>
