@@ -2,6 +2,7 @@ package com.gathin.tvhome;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -76,6 +77,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private static final float DOCK_NEIGHBOUR = 1.10f;
     private static final float DOCK_LIFT_DP = 10f;
     private static final float DOCK_NEIGHBOUR_LIFT_DP = 4f;
+    // Amazon's Appstore, opened from the top bar. It has no TV launcher entry of its own (Amazon's home opens it
+    // through its "Your apps" grid), so it gets a button instead of a tile.
+    private static final ComponentName APPSTORE =
+            new ComponentName("com.amazon.venezia", "com.amazon.venezia.ade.ADEHomeActivity");
+    private static final String APPSTORE_ACTION = "com.amazon.venezia.ade.SHORTCUT_LAUNCH";
     // One easing for everything that moves along the dock, so the icons, label and dot travel together.
     private static final long DOCK_ANIM_MS = 260;
     private static final Interpolator DOCK_EASE = new PathInterpolator(0.2f, 0f, 0f, 1f);
@@ -192,6 +198,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 if (springY.isRunning()) springY.animateToFinalPosition(glassTargetY);
                 else glass.setTranslationY(glassTargetY);
             }
+
+            // The tooltip is placed where the scroll is expected to end; at the ends of the list the scroll can
+            // stop short, so settle it on the tile's real position (a no-op when it already matches).
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView rv, int state) {
+                if (state != RecyclerView.SCROLL_STATE_IDLE || !heroShown) return;
+                RecyclerView.ViewHolder vh = rv.findViewHolderForAdapterPosition(lastFocused);
+                View card = vh != null ? vh.itemView.findViewById(R.id.card) : null;
+                if (card == null || !card.hasFocus() && !card.isFocused()) return;
+                magnifyRow(lastFocused);
+                showHero(lastFocused, cardRect(card, 0));
+            }
         });
 
         // Liquid feel: soft springs on the highlight's position.
@@ -201,8 +219,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             s.setSpring(new SpringForce().setStiffness(260f).setDampingRatio(0.58f));
         }
 
+        View btnStore = findViewById(R.id.btnStore);
         View btnInputs = findViewById(R.id.btnInputs);
         View btnSettings = findViewById(R.id.btnSettings);
+        Intent store = new Intent(APPSTORE_ACTION).setComponent(APPSTORE);
+        boolean hasStore = store.resolveActivity(getPackageManager()) != null;
+        btnStore.setVisibility(hasStore ? View.VISIBLE : View.GONE);
+        btnStore.setOnClickListener(v -> open(new Intent(store)));
+        final View leftmost = hasStore ? btnStore : btnInputs;
         btnInputs.setOnClickListener(v -> showInputs());
         btnWifi.setOnClickListener(v -> open(new Intent(Settings.ACTION_WIFI_SETTINGS)));
         btnSettings.setOnClickListener(v -> open(new Intent(Settings.ACTION_SETTINGS)));
@@ -220,9 +244,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 showHomeScreenMenu(v);
                 return true;
             }
-            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && v.getId() == R.id.btnInputs) return true;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && v == leftmost) return true;
             return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == R.id.btnSettings;
         };
+        btnStore.setOnKeyListener(pillKeys);
         btnInputs.setOnKeyListener(pillKeys);
         btnWifi.setOnKeyListener(pillKeys);
         btnSettings.setOnKeyListener(pillKeys);
@@ -278,76 +303,59 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     // ---- glass highlight -------------------------------------------------------------------------
 
+    /**
+     * Every tile focuses like the dock: it and its row neighbours magnify and lift, and the name tooltip, dot
+     * and glow follow it. The dock row sits at the bottom of the screen; a grid row scrolls just enough to show
+     * the magnified icon with its name above and the dot below.
+     */
     @Override
     public void onTileFocused(int position, View card) {
         lastFocused = position;
-        if (adapter.isDocked(position)) {
-            onDockFocused(position, card);
-            return;
-        }
-        magnifyDock(-1);
-        // Tile rect in root coordinates, using layout positions (ignores the scale animation).
-        Rect r = new Rect(0, 0, card.getWidth(), card.getHeight());
-        root.offsetDescendantRectToMyCoords(card, r);
-        float pad = 6f * density;        // matches GlassView's glow inset
-        float w = card.getWidth() * AppAdapter.FOCUS_SCALE + 2 * pad;
-        float h = card.getHeight() * AppAdapter.FOCUS_SCALE + 2 * pad;
-        float x = r.exactCenterX() - w / 2f;
-        float y = r.exactCenterY() - h / 2f;
-
-        ViewGroup.LayoutParams lp = glass.getLayoutParams();
-        if (lp.width != (int) w || lp.height != (int) h) {
-            lp.width = (int) w;
-            lp.height = (int) h;
-            glass.setLayoutParams(lp);
-            glass.setRadius(Math.min(card.getWidth(), card.getHeight()) * AppAdapter.CORNER_RATIO * AppAdapter.FOCUS_SCALE + pad);
-        }
-        glassTargetX = x;
-        glassTargetY = y;
-        if (!glassShown) {
-            springX.cancel();
-            springY.cancel();
-            glass.setTranslationX(x);
-            glass.setTranslationY(y);
-            glass.animate().alpha(1f).setDuration(180).start();
-            glassShown = true;
-        } else {
-            springX.animateToFinalPosition(x);
-            springY.animateToFinalPosition(y);
-        }
-        View item = (View) card.getParent();
-        hideHero();
-        // Scroll just enough so the whole glass (not only the tile) is visible.
-        Rect want = new Rect(0, -(int) pad * 2, item.getWidth(), item.getHeight() + (int) pad);
-        grid.requestChildRectangleOnScreen(item, want, false);
-    }
-
-    // ---- top shelf -------------------------------------------------------------------------------
-
-    private void onDockFocused(int position, View card) {
         hideGlass();
         View item = (View) card.getParent();
-        int decoratedTop = item.getTop() - (int) (6 * density);
-        int dy = decoratedTop - grid.getPaddingTop();
+        int dy;
+        if (adapter.isDocked(position)) {
+            int decoratedTop = item.getTop() - (int) (6 * density);
+            dy = decoratedTop - grid.getPaddingTop();
+        } else {
+            int above = (int) (card.getHeight() * (DOCK_MAGNIFY - 1) + (DOCK_LIFT_DP + 8 + 34) * density);
+            int below = (int) (16 * density);
+            int top = item.getTop() + card.getTop() - above;
+            int bottom = item.getTop() + card.getBottom() + below;
+            dy = top < 0 ? top : Math.max(0, bottom - grid.getHeight());
+        }
         if (Math.abs(dy) > 1) grid.smoothScrollBy(0, dy);
-        magnifyDock(position);
+        else dy = 0;
+        magnifyRow(position);
+        showHero(position, cardRect(card, dy));
+    }
+
+    /** The tile's rect in root coordinates once the grid has scrolled by dy (layout position, unscaled). */
+    private Rect cardRect(View card, int dy) {
         Rect r = new Rect(0, 0, card.getWidth(), card.getHeight());
         root.offsetDescendantRectToMyCoords(card, r);
         r.offset(0, -dy);
-        showHero(position, r);
+        return r;
     }
 
-    /** Scale dock icons by distance from the focused one; focused < 0 resets them all. */
-    private void magnifyDock(int focused) {
-        RecyclerView.LayoutManager lm = grid.getLayoutManager();
-        if (lm == null) return;
-        for (int i = 0; i < adapter.dockCount(); i++) {
-            View item = lm.findViewByPosition(i);
-            View card = item != null ? item.findViewById(R.id.card) : null;
-            if (card == null) continue;
-            int d = focused < 0 ? Integer.MAX_VALUE : Math.abs(i - focused);
+    private int rowOf(int position) {
+        int dock = adapter.dockCount();
+        return position < dock ? -1 : (position - dock) / COLUMNS;
+    }
+
+    /** Scale icons by distance from the focused one, within its row; focused < 0 resets them all. */
+    private void magnifyRow(int focused) {
+        int row = focused < 0 ? Integer.MIN_VALUE : rowOf(focused);
+        for (int c = 0; c < grid.getChildCount(); c++) {
+            View item = grid.getChildAt(c);
+            int i = grid.getChildAdapterPosition(item);
+            View card = item.findViewById(R.id.card);
+            if (i == RecyclerView.NO_POSITION || card == null) continue;
+            int d = focused < 0 || rowOf(i) != row ? Integer.MAX_VALUE : Math.abs(i - focused);
             float s = d == 0 ? DOCK_MAGNIFY : d == 1 ? DOCK_NEIGHBOUR : 1f;
             float lift = d == 0 ? DOCK_LIFT_DP : d == 1 ? DOCK_NEIGHBOUR_LIFT_DP : 0f;
+            // Only touch icons that change: restarting animators on every visible tile drops frames.
+            if (card.getScaleX() == s && card.getTranslationY() == -lift * density) continue;
             card.setPivotX(card.getWidth() / 2f);
             card.setPivotY(card.getHeight());
             card.animate().scaleX(s).scaleY(s).translationY(-lift * density)
@@ -408,7 +416,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroName.animate().alpha(0f).setDuration(160).start();
         dockDot.animate().alpha(0f).setDuration(160).start();
         ambient.animate().alpha(0f).setDuration(300).start();
-        magnifyDock(-1);
+        magnifyRow(-1);
     }
 
     private void hideGlass() {

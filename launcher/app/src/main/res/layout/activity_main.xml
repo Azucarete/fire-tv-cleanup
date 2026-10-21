@@ -143,6 +143,14 @@
                 android:layout_marginBottom="6dp"
                 android:orientation="horizontal">
 
+                <!-- Amazon Appstore; hidden in code where there is none. -->
+                <TextView
+                    android:id="@+id/btnStore"
+                    style="@style/TopIconButton"
+                    android:contentDescription="@string/appstore"
+                    android:drawableStart="@drawable/ic_store"
+                    android:nextFocusDown="@+id/grid" />
+
                 <TextView
                     android:id="@+id/btnInputs"
                     style="@style/TopIconButton"
