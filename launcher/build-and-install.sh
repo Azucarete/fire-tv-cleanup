@@ -24,6 +24,7 @@ if [ "$MAKER" = "Amazon" ]; then
     "pm install -r /data/local/tmp/tvhome.apk" \
     "rm -f /data/local/tmp/tvhome.apk" \
     "pm grant com.gathin.tvhome android.permission.WRITE_SECURE_SETTINGS" \
+    "appops set com.gathin.tvhome GET_USAGE_STATS allow" \
     "settings put secure enabled_accessibility_services com.gathin.tvhome/com.gathin.tvhome.HomeRedirectService" \
     "settings put secure accessibility_enabled 1" \
     "settings put secure screensaver_components com.gathin.tvhome/com.gathin.tvhome.PhotoDream" \
