@@ -12,6 +12,57 @@ and Google TV. This fork adds Fire TV support and the launcher features listed b
 Everything is reversible: packages are disabled, never uninstalled, and a restore script puts the
 stock launcher back.
 
+## Mi tele (Xiaomi F2 Fire TV, Windows)
+
+Guía rápida de esta copia, montada en una Xiaomi TV F2 de 43" (Fire OS 7) desde Windows.
+
+**Qué tiene la tele**
+- 11 apps de anuncios y telemetría desactivadas
+  ([lista](examples/xiaomi-f2-fire-tv-AFTANNA0/debloat.txt)). Alexa, enviar desde el móvil, AirPlay y
+  las actualizaciones siguen funcionando.
+- El launcher en español, con dock de 8 apps, animación de dock en todas las filas, botón de la tienda
+  de Amazon arriba a la derecha y Vewd/Freeview ocultos. Al pulsar Inicio y al encender la tele sale el
+  launcher, no la pantalla de Amazon.
+
+**Los dos scripts (doble clic en la carpeta del proyecto)**
+- `instalar.bat`: compila el launcher y lo instala en la tele. Úsalo después de cambiar fondos, saludo,
+  dock por defecto o cualquier cosa del launcher. La primera vez pregunta la IP de la tele y la guarda en
+  `tv-ip.txt`.
+- `comprobar.bat`: comprueba que todo sigue como lo dejamos (apps desactivadas, botón Inicio, permisos,
+  salvapantallas) y repara lo que no. Pásalo después de cada actualización de Fire OS.
+
+Los dos necesitan que la tele esté encendida, en la misma Wi-Fi y con **Depuración ADB** activada
+(Ajustes > Mi Fire TV > Opciones para desarrolladores). **Se desactiva cada vez que la tele se reinicia**
+(por ejemplo, tras un corte de luz), así que actívala antes de usarlos. La primera vez que se conecta un
+PC nuevo, acepta en la tele el aviso «¿Permitir depuración USB?».
+
+**Cambiar cosas**
+| Qué | Cómo |
+|---|---|
+| Fondos | Cambia las fotos de `misfondos/` (`mañana.jpg` 5–12 h, `tarde.jpg` 12–17 h, `atardecer.jpg` 17–22 h, `noche.jpg` 22–5 h; 1920×1080) y ejecuta `instalar.bat`. El salvapantallas usa esas mismas 4 fotos. |
+| Saludo | `tvhome.greeting=` en `launcher/local.properties` (en Java, `¡` se escribe `¡`) y `instalar.bat`. |
+| Dock | En la tele: mantén pulsado OK (o Menú) sobre una app para fijarla, quitarla o moverla. |
+| Número de apps por fila | `columns` en `launcher/app/src/main/res/values/config.xml` y `instalar.bat`. |
+| Ocultar una app | Añade su paquete a `hidden_apps` en el mismo `config.xml` y `instalar.bat`. |
+| Desinstalar una app | En la tele: Menú sobre la app > Info de la app > Desinstalar. Las de sistema de Amazon no se pueden. |
+| Instalar una app | Botón de la bolsa (arriba a la derecha) para la tienda de Amazon, búsqueda por voz con el micro del mando, o Downloader para APKs. |
+
+**Lo que solo está en este PC** (está en `.gitignore`, no se sube a GitHub): las fotos de `misfondos/` y
+`launcher/app/src/debug/`, el saludo de `launcher/local.properties`, el icono cuadrado de Prime Video
+(`dock_prime.png`, dibujado con `tools/make_dock_icons.py`), la IP de `tv-ip.txt` y las copias de seguridad
+de `backup/`. Si borras la carpeta del proyecto se pierden; guarda aparte `misfondos/`.
+
+**Deshacer**
+- Volver a la pantalla de Amazon: en el launcher, Menú sobre el engranaje > «Usar la pantalla de inicio de
+  Amazon».
+- Reactivar las apps desactivadas (desde Git Bash, en la carpeta del proyecto):
+  `TV_HOST=<ip> MSYS_NO_PATHCONV=1 tools/restore.sh examples/xiaomi-f2-fire-tv-AFTANNA0/debloat.txt com.amazon.tv.launcher`
+
+**Para reinstalar todo en otro PC con Windows**: Git for Windows, Python 3, `winget install Microsoft.OpenJDK.17`,
+las Android command-line tools con `platforms;android-34` y `build-tools;34.0.0`, y
+`python -m venv tools/venv && tools/venv/Scripts/pip install -r tools/requirements.txt`. En
+`launcher/local.properties`, `sdk.dir=` con la ruta del SDK (por ejemplo `C\:/Users/<usuario>/AppData/Local/Android/Sdk`).
+
 ## Quick start
 
 1. On the TV: Settings → Device Preferences → About → press OK on **Build** seven times → back →

@@ -25,3 +25,5 @@ screenshots/
 launcher/app/src/debug/
 misfondos/
 tools/iconvenv/
+# Your TV IP for instalar.bat / comprobar.bat
+tv-ip.txt
