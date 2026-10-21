@@ -29,4 +29,6 @@
     <string name="move_right">Move Right</string>
     <string name="app_info">App Info</string>
     <string name="dock_full">Dock is full. Unpin an app first.</string>
+    <string name="cant_open">Can\'t open %1$s</string>
+    <string name="not_available">Not available on this TV</string>
 </resources>

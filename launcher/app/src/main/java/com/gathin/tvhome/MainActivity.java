@@ -136,6 +136,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnWifi = findViewById(R.id.btnWifi);
 
         grid = findViewById(R.id.grid);
+        // Each column is 108dp wide; centre COLUMNS of them (264dp each side for 4 on a 960dp-wide TV).
+        int side = Math.max((int) (48 * density),
+                (getResources().getDisplayMetrics().widthPixels - (int) (COLUMNS * 108 * density)) / 2);
+        grid.setPaddingRelative(side, grid.getPaddingTop(), side, grid.getPaddingBottom());
         // One span unit per cell of any dock size 1..COLUMNS: the dock row splits evenly, grid rows are COLUMNS wide.
         final int spans = lcmUpTo(COLUMNS);
         GridLayoutManager glm = new GridLayoutManager(this, spans);
@@ -644,7 +648,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         try {
             startActivity(i);
         } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, "Not available on this TV", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
         }
     }
 
