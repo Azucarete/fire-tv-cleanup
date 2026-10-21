@@ -72,15 +72,28 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         /** How the icon fills a dock tile (ICON_*), worked out on first use; edge is the colour behind ICON_FIT_EDGE. */
         int iconFit;
         int edge;
+        /** Intent action that opens it, or null for an ordinary TV app (MAIN + LEANBACK_LAUNCHER). */
+        final String action;
 
         Entry(String label, ComponentName component, Drawable square, Drawable icon) {
+            this(label, component, square, icon, null);
+        }
+
+        Entry(String label, ComponentName component, Drawable square, Drawable icon, String action) {
             this.label = label;
             this.component = component;
             this.pkg = component.getPackageName();
             this.square = square;
             this.icon = icon;
+            this.action = action;
         }
     }
+
+    // Amazon's Appstore has no TV launcher entry of its own (Amazon's home opens it through its "Your apps" grid),
+    // so it gets a tile here; without it new apps could only be found by voice or from Amazon's home screen.
+    private static final ComponentName APPSTORE =
+            new ComponentName("com.amazon.venezia", "com.amazon.venezia.ade.ADEHomeActivity");
+    private static final String APPSTORE_ACTION = "com.amazon.venezia.ade.SHORTCUT_LAUNCH";
 
     // App tiles: a square opaque icon fills the tile; a wide opaque one sits whole on its own edge colour; one with
     // transparent corners (SmartTube) is shown as drawn, with no tile behind it; one without a size gets graphite.
@@ -134,6 +147,15 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                     : ctx.getResources().getIdentifier(squareName, "drawable", ctx.getPackageName());
             fresh.add(new Entry(label, new ComponentName(pkg, ri.activityInfo.name),
                     square != 0 ? ctx.getDrawable(square) : null, icon));
+        }
+        if (!seen.contains(APPSTORE.getPackageName()) && !hidden.contains(APPSTORE.getPackageName())) {
+            try {
+                pm.getActivityInfo(APPSTORE, 0);
+                fresh.add(new Entry(ctx.getString(R.string.appstore), APPSTORE, null,
+                        pm.getApplicationIcon(APPSTORE.getPackageName()), APPSTORE_ACTION));
+            } catch (PackageManager.NameNotFoundException ignored) {
+                // Not a Fire TV, or no Appstore: no tile.
+            }
         }
         Collections.sort(fresh, (a, b) -> {
             int fa = pinned.indexOf(a.pkg), fb = pinned.indexOf(b.pkg);
@@ -248,8 +270,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     }
 
     private void launch(Entry e) {
-        Intent i = new Intent(Intent.ACTION_MAIN)
-                .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
+        Intent i = (e.action != null ? new Intent(e.action)
+                : new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER))
                 .setComponent(e.component)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
         try {

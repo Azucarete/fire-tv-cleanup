@@ -492,8 +492,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 else Toast.makeText(this, R.string.dock_full, Toast.LENGTH_SHORT).show();
             });
         }
+        // CLEAR_TASK: Fire OS's app-info screen is single-top, so without it a copy left in the background comes
+        // back still showing the app it was opened for last time.
         addInputRow(rows, popup, R.drawable.ic_info, getString(R.string.app_info), -1, () ->
-                open(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + pkg))));
+                open(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + pkg))
+                        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)));
 
         // Float the menu just above the tile, centred on it; the name tooltip steps aside while it's open.
         Rect r = new Rect(0, 0, card.getWidth(), card.getHeight());
