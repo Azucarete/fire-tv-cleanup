@@ -24,3 +24,4 @@ screenshots/
 # Personal backgrounds: override the bundled ones in debug builds, stay local
 launcher/app/src/debug/
 misfondos/
+tools/iconvenv/
