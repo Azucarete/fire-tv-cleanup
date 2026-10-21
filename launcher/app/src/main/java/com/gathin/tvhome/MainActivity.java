@@ -32,6 +32,8 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.animation.AnimationUtils;
 import android.view.animation.DecelerateInterpolator;
+import android.view.animation.Interpolator;
+import android.view.animation.PathInterpolator;
 import android.view.animation.LayoutAnimationController;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -74,6 +76,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private static final float DOCK_NEIGHBOUR = 1.10f;
     private static final float DOCK_LIFT_DP = 10f;
     private static final float DOCK_NEIGHBOUR_LIFT_DP = 4f;
+    // One easing for everything that moves along the dock, so the icons, label and dot travel together.
+    private static final long DOCK_ANIM_MS = 260;
+    private static final Interpolator DOCK_EASE = new PathInterpolator(0.2f, 0f, 0f, 1f);
     private GradientDrawable ambientGlow;
     private int ambientColor;
     private boolean heroShown;
@@ -142,7 +147,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.setPaddingRelative(side, grid.getPaddingTop(), side, grid.getPaddingBottom());
         // One span unit per cell of any dock size 1..COLUMNS: the dock row splits evenly, grid rows are COLUMNS wide.
         final int spans = lcmUpTo(COLUMNS);
-        GridLayoutManager glm = new GridLayoutManager(this, spans);
+        GridLayoutManager glm = new GridLayoutManager(this, spans) {
+            // Keep the rows hidden below the dock laid out, so Down focuses the first row at once and scrolls
+            // smoothly like Up does, instead of scroll-searching for it and moving focus afterwards.
+            @Override
+            protected void calculateExtraLayoutSpace(@NonNull RecyclerView.State state, @NonNull int[] extra) {
+                super.calculateExtraLayoutSpace(state, extra);
+                extra[0] = Math.max(extra[0], getHeight());
+                extra[1] = Math.max(extra[1], getHeight());
+            }
+        };
         glm.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override
             public int getSpanSize(int position) {
@@ -337,13 +351,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             card.setPivotX(card.getWidth() / 2f);
             card.setPivotY(card.getHeight());
             card.animate().scaleX(s).scaleY(s).translationY(-lift * density)
-                    .setDuration(220).setInterpolator(new DecelerateInterpolator()).start();
+                    .setDuration(DOCK_ANIM_MS).setInterpolator(DOCK_EASE).start();
             // The shadow grows from the same point (the icon's bottom centre) so it stays under the icon.
             View shadow = item.findViewById(R.id.shadow);
             shadow.setPivotX(shadow.getWidth() / 2f);
             shadow.setPivotY(card.getBottom() - shadow.getTop());
             shadow.animate().scaleX(s).scaleY(s).translationY(-lift * density)
-                    .setDuration(220).setInterpolator(new DecelerateInterpolator()).start();
+                    .setDuration(DOCK_ANIM_MS).setInterpolator(DOCK_EASE).start();
         }
     }
 
@@ -352,22 +366,32 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroName.setText(adapter.labelAt(position));
         heroName.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         float iconTop = card.bottom - card.height() * DOCK_MAGNIFY - DOCK_LIFT_DP * density;
-        heroName.setX(card.exactCenterX() - heroName.getMeasuredWidth() / 2f);
-        heroName.setY(iconTop - 8 * density - heroName.getMeasuredHeight());
-        dockDot.setX(card.exactCenterX() - dockDot.getWidth() / 2f);
-        dockDot.setY(card.bottom + 3 * density);
-        heroName.animate().alpha(1f).setDuration(160).start();
-        dockDot.animate().alpha(1f).setDuration(160).start();
+        float nameX = card.exactCenterX() - heroName.getMeasuredWidth() / 2f;
+        float nameY = iconTop - 8 * density - heroName.getMeasuredHeight();
+        float dotX = card.exactCenterX() - dockDot.getWidth() / 2f;
+        float dotY = card.bottom + 3 * density;
         int color = adapter.ambientColorAt(position);
         if (!heroShown) {
+            // Appearing: place the label and dot, then fade them in.
+            heroName.animate().cancel();
+            dockDot.animate().cancel();
+            heroName.setX(nameX);
+            heroName.setY(nameY);
+            dockDot.setX(dotX);
+            dockDot.setY(dotY);
+            heroName.animate().alpha(1f).setDuration(160).start();
+            dockDot.animate().alpha(1f).setDuration(160).start();
             setAmbient(color);
             ambient.animate().alpha(1f).setDuration(600).start();
             heroShown = true;
-        } else if (color != ambientColor) {
-            ambient.animate().alpha(0.35f).setDuration(200).withEndAction(() -> {
-                setAmbient(color);
-                ambient.animate().alpha(1f).setDuration(500).start();
-            }).start();
+        } else {
+            // Moving along the dock: glide with the icons instead of jumping.
+            heroName.animate().x(nameX).y(nameY).alpha(1f)
+                    .setDuration(DOCK_ANIM_MS).setInterpolator(DOCK_EASE).start();
+            dockDot.animate().x(dotX).y(dotY).alpha(1f)
+                    .setDuration(DOCK_ANIM_MS).setInterpolator(DOCK_EASE).start();
+            // The glow is faint, so a straight swap reads as smooth; animating a full-screen gradient drops frames.
+            if (color != ambientColor) setAmbient(color);
         }
     }
 
