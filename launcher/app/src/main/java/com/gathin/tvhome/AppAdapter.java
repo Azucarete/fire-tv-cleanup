@@ -67,7 +67,6 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         /** Square dock art, or null: then the app's own icon sits on a graphite tile. */
         final Drawable square;
         final Drawable icon;
-        int ambient;
         /** How the icon fills a dock tile (ICON_*), worked out on first use; edge is the colour behind ICON_FIT_EDGE. */
         int iconFit;
         int edge;
@@ -266,14 +265,6 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         return position >= 0 && position < items.size() ? items.get(position).label : "";
     }
 
-    /** A vivid colour sampled from the app's banner (or icon), cached per entry. */
-    int ambientColorAt(int position) {
-        if (position < 0 || position >= items.size()) return 0xFF444444;
-        Entry e = items.get(position);
-        if (e.ambient == 0) e.ambient = vividColor(e.square != null ? e.square : e.icon);
-        return e.ambient;
-    }
-
     /** Classifies the icon once: square with opaque corners fills the tile, otherwise it is shown whole. */
     private static int iconFit(Entry e) {
         if (e.iconFit != 0) return e.iconFit;
@@ -301,47 +292,6 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         return e.iconFit = ICON_FIT_GRAPHITE;
     }
 
-    private static int vividColor(Drawable live) {
-        if (live == null) return 0xFF444444;
-        // Draw a private copy: changing the bounds of the drawable an ImageView shows would blank the tile.
-        Drawable d = live.getConstantState() != null ? live.getConstantState().newDrawable().mutate() : live;
-        Rect saved = new Rect(d.getBounds());
-        int n = 12;
-        Bitmap bmp = Bitmap.createBitmap(n, n, Bitmap.Config.ARGB_8888);
-        Canvas c = new Canvas(bmp);
-        d.setBounds(0, 0, n, n);
-        d.draw(c);
-        d.setBounds(saved);
-        float[] hsv = new float[3];
-        int best = 0xFF444444;
-        float bestScore = -1f;
-        long r = 0, g = 0, b = 0;
-        for (int y = 0; y < n; y++) {
-            for (int x = 0; x < n; x++) {
-                int p = bmp.getPixel(x, y);
-                r += Color.red(p);
-                g += Color.green(p);
-                b += Color.blue(p);
-                Color.colorToHSV(p, hsv);
-                float score = hsv[1] * Math.min(1f, hsv[2] * 1.4f);   // saturated and not too dark
-                if (score > bestScore) {
-                    bestScore = score;
-                    best = p;
-                }
-            }
-        }
-        bmp.recycle();
-        if (bestScore < 0.25f) {   // nearly monochrome banner (e.g. white): use its average, lifted
-            int avg = Color.rgb((int) (r / (n * n)), (int) (g / (n * n)), (int) (b / (n * n)));
-            Color.colorToHSV(avg, hsv);
-            hsv[2] = Math.max(hsv[2], 0.55f);
-            return Color.HSVToColor(hsv);
-        }
-        Color.colorToHSV(best, hsv);
-        hsv[1] = Math.min(1f, hsv[1] * 1.1f);
-        hsv[2] = Math.max(0.5f, hsv[2]);
-        return Color.HSVToColor(hsv);
-    }
 
     static final class Holder extends RecyclerView.ViewHolder {
         final View card;

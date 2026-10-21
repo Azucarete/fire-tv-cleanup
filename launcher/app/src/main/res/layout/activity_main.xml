@@ -18,13 +18,6 @@
         android:layout_height="match_parent"
         android:background="@drawable/bg_scrim" />
 
-    <!-- Ambient glow in the colour of the focused dock app. -->
-    <View
-        android:id="@+id/ambient"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:alpha="0" />
-
     <!-- Name tooltip above the focused dock icon, positioned in code. -->
     <TextView
         android:id="@+id/heroName"

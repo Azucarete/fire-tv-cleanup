@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.GradientDrawable;
 import android.media.tv.TvContract;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
@@ -69,7 +68,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private RecyclerView grid;
     private FrameLayout root;
     private GlassView glass;
-    private View ambient;
     private TextView heroName;
     private View dockDot;
     // macOS dock magnification: focused icon and its neighbours grow from their bottom edge and lift.
@@ -85,8 +83,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     // One easing for everything that moves along the dock, so the icons, label and dot travel together.
     private static final long DOCK_ANIM_MS = 260;
     private static final Interpolator DOCK_EASE = new PathInterpolator(0.2f, 0f, 0f, 1f);
-    private GradientDrawable ambientGlow;
-    private int ambientColor;
     private boolean heroShown;
     private TextView greeting;
     private ImageView bgPhoto;
@@ -133,7 +129,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         root = findViewById(R.id.root);
         glass = findViewById(R.id.glass);
-        ambient = findViewById(R.id.ambient);
         heroName = findViewById(R.id.heroName);
         // Same weights as res/layout/activity_main.xml and styles.xml (TopButton), which Android 9 ignores.
         setWeight(heroName, 750);
@@ -143,12 +138,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         setWeight(findViewById(R.id.date), 400);
         setWeight(findViewById(R.id.btnWifi), 500);
         dockDot = findViewById(R.id.dockDot);
-        ambientGlow = new GradientDrawable();
-        ambientGlow.setGradientType(GradientDrawable.RADIAL_GRADIENT);
-        ambientGlow.setGradientCenter(0.32f, 0.42f);
-        ambient.setBackground(ambientGlow);
-        ambient.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) ->
-                ambientGlow.setGradientRadius((r - l) * 0.62f));
         greeting = findViewById(R.id.greeting);
         bgPhoto = findViewById(R.id.bgPhoto);
         btnWifi = findViewById(R.id.btnWifi);
@@ -277,7 +266,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroShown = false;
         heroName.setAlpha(0f);
         dockDot.setAlpha(0f);
-        ambient.setAlpha(0f);
         adapter.reload();
         grid.scheduleLayoutAnimation();
         updateGreeting();
@@ -311,8 +299,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     // ---- glass highlight -------------------------------------------------------------------------
 
     /**
-     * Every tile focuses like the dock: it and its row neighbours magnify and lift, and the name tooltip, dot
-     * and glow follow it. The dock row sits at the bottom of the screen; a grid row scrolls just enough to show
+     * Every tile focuses like the dock: it and its row neighbours magnify and lift, and the name tooltip and dot
+     * follow it. The dock row sits at the bottom of the screen; a grid row scrolls just enough to show
      * the magnified icon with its name above and the dot below.
      */
     @Override
@@ -376,7 +364,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
     }
 
-    // Name tooltip above the magnified icon, dot below it, and a soft glow in the app's colour.
+    // Name tooltip above the magnified icon and a dot below it.
     private void showHero(int position, Rect card) {
         heroName.setText(adapter.labelAt(position));
         heroName.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
@@ -385,7 +373,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         float nameY = iconTop - 8 * density - heroName.getMeasuredHeight();
         float dotX = card.exactCenterX() - dockDot.getWidth() / 2f;
         float dotY = card.bottom + 3 * density;
-        int color = adapter.ambientColorAt(position);
         if (!heroShown) {
             // Appearing: place the label and dot, then fade them in.
             heroName.animate().cancel();
@@ -396,8 +383,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             dockDot.setY(dotY);
             heroName.animate().alpha(1f).setDuration(160).start();
             dockDot.animate().alpha(1f).setDuration(160).start();
-            setAmbient(color);
-            ambient.animate().alpha(1f).setDuration(600).start();
             heroShown = true;
         } else {
             // Moving along the dock: glide with the icons instead of jumping.
@@ -405,16 +390,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     .setDuration(DOCK_ANIM_MS).setInterpolator(DOCK_EASE).start();
             dockDot.animate().x(dotX).y(dotY).alpha(1f)
                     .setDuration(DOCK_ANIM_MS).setInterpolator(DOCK_EASE).start();
-            // The glow is faint, so a straight swap reads as smooth; animating a full-screen gradient drops frames.
-            if (color != ambientColor) setAmbient(color);
         }
-    }
-
-    private void setAmbient(int color) {
-        ambientColor = color;
-        int c = color & 0x00FFFFFF;
-        // Kept faint so the photo keeps its own colours (was 36% / 15%).
-        ambientGlow.setColors(new int[]{0x26000000 | c, 0x0D000000 | c, 0x00000000 | c});
     }
 
     private void hideHero() {
@@ -422,7 +398,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroShown = false;
         heroName.animate().alpha(0f).setDuration(160).start();
         dockDot.animate().alpha(0f).setDuration(160).start();
-        ambient.animate().alpha(0f).setDuration(300).start();
         magnifyRow(-1);
     }
 
