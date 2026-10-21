@@ -568,6 +568,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void updateGreeting() {
+        String fixed = getString(R.string.greeting_text).trim();
+        if (!fixed.isEmpty()) {
+            greeting.setText(fixed);
+            return;
+        }
         String text = getString(GREETINGS[dayPart()]);
         String name = getString(R.string.user_name).trim();
         greeting.setText(name.isEmpty() ? text : text + ", " + name);
