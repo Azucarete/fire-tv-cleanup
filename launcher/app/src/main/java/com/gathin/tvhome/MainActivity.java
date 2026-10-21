@@ -233,6 +233,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onResume() {
         super.onResume();
+        // Back in front: take the Home cover down once this screen has drawn, so nothing flashes between.
+        HomeCover.hideAfterNextDraw(root);
         heroShown = false;
         heroName.setAlpha(0f);
         dockDot.setAlpha(0f);

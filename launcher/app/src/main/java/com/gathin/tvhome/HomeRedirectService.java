@@ -69,6 +69,7 @@ public class HomeRedirectService extends AccessibilityService {
         IntentFilter screen = new IntentFilter(Intent.ACTION_SCREEN_ON);
         screen.addAction(Intent.ACTION_SCREEN_OFF);
         registerReceiver(screenOn, screen);
+        HomeCover.prepare(this);
         if (SystemClock.elapsedRealtime() < BOOT_WINDOW_MS) openLauncher();
     }
 
@@ -114,6 +115,7 @@ public class HomeRedirectService extends AccessibilityService {
             return;
         }
         Log.i(TAG, "home screen: opening launcher");
+        HomeCover.show(this);
         handler.post(redirect);
     }
 

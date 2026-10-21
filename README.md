@@ -55,9 +55,11 @@ PC nuevo, acepta en la tele el aviso «¿Permitir depuración USB?».
 (`dock_prime.png`, dibujado con `tools/make_dock_icons.py`), la IP de `tv-ip.txt`, el dock de `mi-dock.txt` y
 las copias de seguridad de `backup/`.
 
-**Al pulsar Inicio** desde una app se ve la pantalla de Amazon unos 3–5 segundos antes de que vuelva el launcher.
-Es una protección de Android (tras pulsar Inicio, durante 5 s solo las apps del sistema pueden abrir pantallas) y
-no se puede saltar. Al encender la tele no pasa: el launcher ya está delante. Si borras la carpeta del proyecto se pierden; guarda aparte `misfondos/`.
+**Al pulsar Inicio** desde una app, Android retiene el launcher unos 4–5 segundos (una protección del sistema:
+tras pulsar Inicio, durante 5 s solo las apps del sistema pueden abrir pantallas). Para que no se vea la pantalla
+de Amazon mientras tanto, se pone encima una de las 4 fotos de fondo, elegida al azar, que se desvanece cuando
+llega el launcher. Durante esos segundos el mando no responde (las pulsaciones se descartan para que no abran nada en
+la pantalla de Amazon de debajo). Al encender la tele no pasa: el launcher ya está delante. Si borras la carpeta del proyecto se pierden; guarda aparte `misfondos/`.
 
 **Deshacer**
 - Volver a la pantalla de Amazon: en el launcher, Menú sobre el engranaje > «Usar la pantalla de inicio de
