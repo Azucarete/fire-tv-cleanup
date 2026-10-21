@@ -1,6 +1,7 @@
 # Xiaomi TV F2 43" Fire TV Edition, sold as L43M7-FVEU, model AFTANNA0 (anna), Fire OS 7 / Android 9,
 # build PS7717.5741N
-# Ads and telemetry only. Packages are disabled for user 0, never uninstalled. Undo with tools/restore.sh.
+# Ads, telemetry and Alexa. Packages are disabled for user 0, never uninstalled. Undo with tools/restore.sh.
+# Disabling Alexa also turns off voice search on the remote's microphone button.
 # Amazon's launcher (com.amazon.tv.launcher) stays enabled: Fire OS needs it.
 # Undo everything:
 #   TV_HOST=<ip> tools/restore.sh examples/xiaomi-f2-fire-tv-AFTANNA0/debloat.txt com.amazon.tv.launcher
@@ -17,3 +18,19 @@ com.amazon.wirelessmetrics.service
 com.amazon.tv.fw.metrics
 com.amazon.perfcollection
 com.amazon.dp.logger
+# Alexa. Keeps com.amazon.tcomm (Amazon's cloud link, used by the Appstore and others) and com.ivona.* (the
+# screen reader's voice). Fire OS keeps Alexa's core: com.amazon.vizzini (the assistant) is re-enabled at every
+# boot, so it is not listed, and com.amazon.whad is started at boot even while disabled. The rest stay off.
+com.amazon.vizzini.ftvcds
+amazon.speech.davs.davcservice    # speech recognition service
+com.amazon.alexamediaplayer.runtime.ftv
+com.amazon.alexa.externalmediaplayer.fireos
+com.amazon.alexadirectivebrokerservice
+com.amazon.alexa.datastore.app
+com.amazon.tv.alexaalerts
+com.amazon.tv.alexanotifications
+com.amazon.whad                   # Alexa multi-room audio (still started at boot by Fire OS)
+com.amazon.whasettings
+com.amazon.wha.mediabrowserservice
+com.amazon.tv.matter              # smart-home control through Alexa
+com.amazon.tv.mattercohost

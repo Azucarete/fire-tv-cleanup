@@ -19,9 +19,10 @@ stock launcher back.
 Guía rápida de esta copia, montada en una Xiaomi TV F2 de 43" (Fire OS 7) desde Windows.
 
 **Qué tiene la tele**
-- 11 apps de anuncios y telemetría desactivadas
-  ([lista](examples/xiaomi-f2-fire-tv-AFTANNA0/debloat.txt)). Alexa, enviar desde el móvil, AirPlay y
-  las actualizaciones siguen funcionando.
+- 11 apps de anuncios y telemetría y 13 de Alexa desactivadas
+  ([lista](examples/xiaomi-f2-fire-tv-AFTANNA0/debloat.txt)). Sin Alexa no hay búsqueda por voz con el micro
+  del mando; Fire OS mantiene a la fuerza el núcleo del asistente. Enviar desde el móvil, AirPlay y las
+  actualizaciones siguen funcionando.
 - El launcher en español, con dock de 8 apps, animación de dock en todas las filas, botón de la tienda
   de Amazon arriba a la derecha y Vewd/Freeview ocultos. Al pulsar Inicio y al encender la tele sale el
   launcher, no la pantalla de Amazon.
@@ -48,7 +49,7 @@ PC nuevo, acepta en la tele el aviso «¿Permitir depuración USB?».
 | Número de apps por fila | `columns` en `launcher/app/src/main/res/values/config.xml` y `instalar.bat`. |
 | Ocultar una app | Añade su paquete a `hidden_apps` en el mismo `config.xml` y `instalar.bat`. |
 | Desinstalar una app | En la tele: Menú sobre la app > Info de la app > Desinstalar. Las de sistema de Amazon no se pueden. |
-| Instalar una app | Botón de la bolsa (arriba a la derecha) para la tienda de Amazon, búsqueda por voz con el micro del mando, o Downloader para APKs. |
+| Instalar una app | Botón de la bolsa (arriba a la derecha) para la tienda de Amazon, o Downloader para APKs. |
 
 **Lo que solo está en este PC** (está en `.gitignore`, no se sube a GitHub): las fotos de `misfondos/` y
 `launcher/app/src/debug/`, el saludo de `launcher/local.properties`, el icono cuadrado de Prime Video
