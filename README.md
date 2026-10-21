@@ -1,11 +1,13 @@
-# fire-tv-cleanup
+# xiaomi-fire-tv-cleanup-es
 
 **Your TV, minus the ads.** Debloat an Android TV, Google TV or Fire TV over ADB and give it a
 clean launcher with a macOS-style dock. Hand the prompt to Claude Code or any coding assistant,
 answer a few questions about which apps you use, and it does the rest on the real TV.
 
-Forked from [Gathin23/tv-vibehack](https://github.com/Gathin23/tv-vibehack), which covers Android TV
-and Google TV. This fork adds Fire TV support and the launcher features listed below.
+Forked from [itsmeterrylin/fire-tv-cleanup](https://github.com/itsmeterrylin/fire-tv-cleanup), which
+adds Fire TV support to [Gathin23/tv-vibehack](https://github.com/Gathin23/tv-vibehack) (Android TV and
+Google TV). This fork is set up for a Xiaomi TV F2 Fire TV Edition, in Spanish, from Windows: see
+[Mi tele](#mi-tele-xiaomi-f2-fire-tv-windows).
 
 ![Fire TV home screen with ads (top) and the launcher (bottom)](docs/firetv-home-before-after.jpg)
 
