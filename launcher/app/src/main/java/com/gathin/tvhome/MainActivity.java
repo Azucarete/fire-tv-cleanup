@@ -97,6 +97,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView btnWifi;
     private TextView btnSleep;
     private View offlineCard;
+    private NowPlaying nowPlaying;
+    private boolean leftFromTopBar;   // focus was on a top-bar button when something else came in front
     private int lastFocused = 0;
     private float density;
 
@@ -153,6 +155,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnWifi = findViewById(R.id.btnWifi);
         btnSleep = findViewById(R.id.btnSleep);
         offlineCard = findViewById(R.id.offlineCard);
+        View nowPlayingCard = findViewById(R.id.nowPlaying);
+        NowPlaying.style(nowPlayingCard);
+        nowPlaying = new NowPlaying(this, playing -> NowPlaying.show(nowPlayingCard, playing));
+        // Under the clock, or under the restart hint when it shows: 18dp below whichever is lower.
+        View holder = findViewById(R.id.nowPlayingHolder);
+        View.OnLayoutChangeListener placeCard = (v, l, t, r, b, ol, ot, or, ob) -> {
+            View hint = findViewById(R.id.restartHint);
+            View above = hint.getVisibility() == View.VISIBLE ? hint : findViewById(R.id.leftBlock);
+            Rect at = new Rect(0, 0, above.getWidth(), above.getHeight());
+            root.offsetDescendantRectToMyCoords(above, at);
+            holder.setY(at.bottom + 18 * density);
+        };
+        findViewById(R.id.leftBlock).addOnLayoutChangeListener(placeCard);
+        findViewById(R.id.restartHint).addOnLayoutChangeListener(placeCard);
 
         grid = findViewById(R.id.grid);
         // Each column is 108dp wide; centre COLUMNS of them (264dp each side for 4 on a 960dp-wide TV).
@@ -272,15 +288,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateWifiLabel();
         updateRestartHint();
         updateSleepButton();
+        nowPlaying.start();
         handler.postDelayed(minuteTick, MINUTE_MS);
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         if (cm != null) cm.registerDefaultNetworkCallback(networkCallback);
 
-        // Return to the tile or top-bar button we left from (Settings, Wi-Fi, an input…), else the last tile.
+        // Return to the tile or top-bar button we left from (Settings, Wi-Fi, an input…), else the last tile. Only a
+        // top-bar button left from: on a fresh start Android focuses the first one, and the dock must take over.
         grid.post(() -> {
             View focused = getCurrentFocus();
             if (focused != null && (grid.findContainingViewHolder(focused) != null
-                    || focused.getParent() == findViewById(R.id.topButtons))) return;
+                    || leftFromTopBar && focused.getParent() == findViewById(R.id.topButtons))) return;
             focusTile(lastFocused);
         });
     }
@@ -288,9 +306,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onPause() {
         super.onPause();
+        View focused = getCurrentFocus();
+        leftFromTopBar = focused != null && focused.getParent() == findViewById(R.id.topButtons);
         handler.removeCallbacks(minuteTick);
         handler.removeCallbacks(sleepTick);
         handler.removeCallbacks(offlineRecheck);
+        nowPlaying.stop();
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         if (cm != null) cm.unregisterNetworkCallback(networkCallback);
     }
@@ -317,6 +338,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     public void onTileFocused(int position, View card) {
         lastFocused = position;
+        // The app rows scroll up under the "Now playing" card: it steps aside while browsing them.
+        findViewById(R.id.nowPlayingHolder).animate().alpha(adapter.isDocked(position) ? 1f : 0f).setDuration(200).start();
         View item = (View) card.getParent();
         int dy;
         if (adapter.isDocked(position)) {

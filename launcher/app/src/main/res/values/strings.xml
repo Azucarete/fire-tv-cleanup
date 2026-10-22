@@ -69,6 +69,7 @@
     <string name="standby_never_option">Never</string>
     <string name="standby_set_after">The TV will turn off after %1$s without a key press</string>
     <string name="standby_set_never">The TV won\'t turn off by itself: turn it off with the remote</string>
+    <string name="now_playing">Now playing</string>
     <string name="settings_network">Network</string>
     <string name="settings_device">Device &amp; Software</string>
     <string name="settings_apps">Apps</string>

@@ -27,6 +27,7 @@ if [ "$MAKER" = "Amazon" ]; then
     "rm -f /data/local/tmp/tvhome.apk" \
     "pm grant com.gathin.tvhome android.permission.WRITE_SECURE_SETTINGS" \
     "appops set com.gathin.tvhome GET_USAGE_STATS allow" \
+    "cmd notification allow_listener com.gathin.tvhome/com.gathin.tvhome.NowPlayingListener" \
     "settings put secure enabled_accessibility_services ''" \
     "sleep 3" \
     "settings put secure enabled_accessibility_services com.gathin.tvhome/com.gathin.tvhome.HomeRedirectService" \

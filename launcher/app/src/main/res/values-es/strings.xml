@@ -67,6 +67,7 @@
     <string name="standby_never_option">Nunca</string>
     <string name="standby_set_after">La tele se apagará sola a los %1$s sin tocar el mando</string>
     <string name="standby_set_never">La tele ya no se apagará sola: apágala tú con el mando</string>
+    <string name="now_playing">Ahora suena</string>
     <string name="settings_network">Red</string>
     <string name="settings_device">Dispositivo y software</string>
     <string name="settings_apps">Apps</string>

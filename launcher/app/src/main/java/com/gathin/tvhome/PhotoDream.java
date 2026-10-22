@@ -7,6 +7,8 @@ import android.os.Looper;
 import android.service.dreams.DreamService;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextClock;
@@ -17,7 +19,7 @@ import java.util.List;
 
 /**
  * Screensaver: the screensaver_photos full screen, each slowly zooming in, crossfading every SLIDE_MS, with a
- * small clock in the corner. Chosen with:
+ * small clock in the corner and, while music plays, what is playing (NowPlaying) in the other. Chosen with:
  *   settings put secure screensaver_components com.gathin.tvhome/com.gathin.tvhome.PhotoDream
  * and Amazon's back with:
  *   settings put secure screensaver_components com.amazon.ftv.screensaver/.app.services.ScreensaverService
@@ -27,11 +29,14 @@ public class PhotoDream extends DreamService {
     private static final long SLIDE_MS = 20_000;
     private static final long FADE_MS = 2_500;
     private static final float ZOOM = 1.08f;   // reached over one slide, then the next photo takes over
+    private static final float NOW_PLAYING_SCALE = 1.5f;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final List<Integer> order = new ArrayList<>();
     private ImageView front, back;
     private TextClock clock;
+    private View nowPlayingCard;
+    private NowPlaying nowPlaying;
     private int next;
 
     private final Runnable advance = new Runnable() {
@@ -57,6 +62,22 @@ public class PhotoDream extends DreamService {
         root.addView(front);
         clock = clock();
         root.addView(clock);
+        // What Spotify (or any app) is playing, bottom left across from the clock; hidden while nothing plays.
+        nowPlayingCard = LayoutInflater.from(this).inflate(R.layout.now_playing, root, false);
+        float dp = getResources().getDisplayMetrics().density;
+        FrameLayout.LayoutParams np = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.START);
+        np.setMargins((int) (48 * dp), 0, 0, (int) (36 * dp));
+        root.addView(nowPlayingCard, np);
+        NowPlaying.style(nowPlayingCard);
+        // Seen from across the room here, so larger than on the home screen; grows from its bottom-left corner.
+        nowPlayingCard.setScaleX(NOW_PLAYING_SCALE);
+        nowPlayingCard.setScaleY(NOW_PLAYING_SCALE);
+        nowPlayingCard.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            v.setPivotX(0f);
+            v.setPivotY(b - t);
+        });
+        nowPlaying = new NowPlaying(this, playing -> NowPlaying.show(nowPlayingCard, playing));
         setContentView(root);
 
         // The photos come from res/values/config.xml (screensaver_photos).
@@ -72,11 +93,13 @@ public class PhotoDream extends DreamService {
     public void onDreamingStarted() {
         super.onDreamingStarted();
         handler.post(advance);
+        nowPlaying.start();
     }
 
     @Override
     public void onDreamingStopped() {
         handler.removeCallbacks(advance);
+        nowPlaying.stop();
         super.onDreamingStopped();
     }
 
@@ -96,6 +119,7 @@ public class PhotoDream extends DreamService {
         front = incoming;
         back = outgoing;
         clock.bringToFront();
+        nowPlayingCard.bringToFront();
     }
 
     private ImageView photoView() {
@@ -111,7 +135,7 @@ public class PhotoDream extends DreamService {
         c.setFormat12Hour("h:mm");
         c.setFormat24Hour("HH:mm");
         c.setTextColor(0xE6FFFFFF);
-        c.setTextSize(TypedValue.COMPLEX_UNIT_SP, 30);
+        c.setTextSize(TypedValue.COMPLEX_UNIT_SP, 42);
         c.setTypeface(getResources().getFont(R.font.open_sans));
         c.setFontVariationSettings("'wght' 300");
         c.setShadowLayer(12f, 0f, 2f, 0x99000000);

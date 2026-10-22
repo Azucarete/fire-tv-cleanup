@@ -8,6 +8,7 @@ LIST="${DEBLOAT:-examples/xiaomi-f2-fire-tv-AFTANNA0/debloat.txt}"
 APP=com.gathin.tvhome
 REDIRECT=$APP/$APP.HomeRedirectService
 DREAM=$APP/$APP.PhotoDream
+NOW_PLAYING=$APP/$APP.NowPlayingListener
 tv() { "$PY" -I tools/tv.py "$@" | tr -d '\r'; }
 ok() { echo "  [OK]       $1"; }
 fixed() { echo "  [REPARADO] $1"; }
@@ -36,6 +37,9 @@ else tv "pm grant $APP android.permission.WRITE_SECURE_SETTINGS"; fixed "permiso
 fi
 if tv "appops get $APP GET_USAGE_STATS" | grep -q allow; then ok "permiso de estadísticas de uso (encendido)"
 else tv "appops set $APP GET_USAGE_STATS allow"; fixed "permiso de estadísticas de uso (encendido)"
+fi
+if tv 'settings get secure enabled_notification_listeners' | grep -q "$NOW_PLAYING"; then ok "permiso para ver qué suena (Spotify)"
+else tv "cmd notification allow_listener $NOW_PLAYING" >/dev/null; fixed "permiso para ver qué suena (Spotify)"
 fi
 if tv 'settings get secure enabled_accessibility_services' | grep -q "$REDIRECT" \
     && [ "$(tv 'settings get secure accessibility_enabled')" = 1 ]; then ok "botón Inicio abre el launcher"

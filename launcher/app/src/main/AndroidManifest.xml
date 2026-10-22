@@ -54,6 +54,17 @@
             </intent-filter>
         </service>
 
+        <!-- Only there so NowPlaying may see what other apps play; reads no notifications. Enabled over adb. -->
+        <service
+            android:name=".NowPlayingListener"
+            android:exported="true"
+            android:label="@string/now_playing"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <!-- Sleep timer alarms: a warning a minute before, then the TV goes to sleep. -->
         <receiver
             android:name=".SleepTimer"

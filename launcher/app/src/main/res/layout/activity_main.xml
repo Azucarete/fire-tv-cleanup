@@ -215,6 +215,21 @@
         </FrameLayout>
     </LinearLayout>
 
+    <!-- What Spotify is playing, under the clock. Floats over the screen so the dock doesn't move when it comes and
+         goes; placed under the clock (and restart hint) in code, and faded out while browsing the app rows. -->
+    <FrameLayout
+        android:id="@+id/nowPlayingHolder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="56dp">
+
+        <include
+            android:id="@+id/nowPlaying"
+            layout="@layout/now_playing"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </FrameLayout>
+
     <!-- Shown in code when the TV has been without internet for a few seconds; the Wi-Fi pill alone is easy to miss. -->
     <LinearLayout
         android:id="@+id/offlineCard"
