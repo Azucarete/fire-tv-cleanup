@@ -52,6 +52,7 @@ PC nuevo, acepta en la tele el aviso «¿Permitir depuración USB?».
 | Tiempo del salvapantallas | En la tele: Menú sobre el engranaje > «Salvapantallas a los…» (5, 10, 15 o 30 min). La tele se apaga sola unos 9 min después de que salga el salvapantallas, igual que antes. |
 | Aviso de «sin internet» | Si la tele lleva 20 s sin internet, sale un aviso grande en el centro con qué pasa y qué probar. Desaparece solo al volver la conexión. |
 | Aviso de reinicio | Si la tele lleva 7 días o más sin reiniciarse, aparece un aviso bajo el reloj. Desaparece al reiniciarla. |
+| Reiniciar la tele | En la tele: Menú sobre el engranaje > «Reiniciar la tele». Se abren los Ajustes de Amazon con «Reiniciar» ya marcado (solo Amazon tiene permiso para reiniciar): pulsa OK, y OK otra vez en su pregunta. Si algún día no aparece marcado (por ejemplo, tras una actualización de Fire OS), baja hasta «Reiniciar» a mano; la opción de debajo es la de fábrica. |
 | Desinstalar una app | En la tele: Menú sobre la app > Info de la app > Desinstalar. Las de sistema de Amazon no se pueden. |
 | Instalar una app | Botón de la bolsa (arriba a la derecha) para la tienda de Amazon, o Downloader para APKs. |
 

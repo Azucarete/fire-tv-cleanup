@@ -539,8 +539,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         addInputRow(rows, popup, R.drawable.ic_screensaver, getString(R.string.screensaver_after, duration(screensaverMinutes())), -1,
                 () -> showScreensaverTimes(anchor));
+        addInputRow(rows, popup, R.drawable.ic_restart_tv, getString(R.string.restart_tv), -1, this::restartTv);
         popup.showAsDropDown(anchor, anchor.getWidth() - width, (int) (10 * density), Gravity.START);
         rows.getChildAt(0).requestFocus();
+    }
+
+    /** Amazon's Restart, highlighted; Amazon asks to confirm. See HomeRedirectService.restartTv. */
+    private void restartTv() {
+        if (!HomeRedirectService.restartTv(this)) {
+            Toast.makeText(this, R.string.restart_failed, Toast.LENGTH_LONG).show();
+        }
     }
 
     /** Apps hidden on the TV, under the Settings button: picking one puts it back on the grid. */

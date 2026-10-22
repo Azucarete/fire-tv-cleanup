@@ -14,6 +14,7 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.provider.Settings;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 /**
  * Makes this launcher the home screen on Fire OS, which ignores the default-home setting.
@@ -74,6 +75,94 @@ public class HomeRedirectService extends AccessibilityService {
     /** Puts the TV to sleep (standby), as the remote's power button does. False when the service isn't running. */
     static boolean sleepNow() {
         return running != null && running.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN);
+    }
+
+    // ---- restart ---------------------------------------------------------------------------------
+
+    // Only Amazon's Settings may restart the TV (android.permission.REBOOT), and its list only reacts to the
+    // remote's OK key, not to an accessibility click. So the launcher opens its "Device & Software" screen with
+    // the highlight already on Restart; OK there brings Amazon's own "Restart / Cancel" question, where this moves
+    // the highlight from Cancel to Restart. Two presses of OK, and nothing is pressed for the user. Both are found
+    // by their exact label, never by position: Factory Reset is the next item down. If a label doesn't match
+    // (another language, a Fire OS update), the highlight stays where Amazon put it.
+    private static final String AMAZON_SETTINGS = "com.amazon.tv.settings.v2";
+    private static final String DEVICE_SETTINGS = "com.amazon.device.settings.action.DEVICE";
+    private static final String[] RESTART_LABELS = {"Reiniciar", "Restart"};
+    private static final long RESTART_TRY_MS = 400;
+    private static final long FIND_RESTART_MS = 10_000;     // for the screen to open and the item to turn up
+    private static final long WAIT_FOR_OK_MS = 60_000;      // for the user to press OK on it
+    private long restartUntil;
+    private boolean restartFocused;
+    private final Runnable restartStep = this::restartStep;
+
+    /** Opens Amazon's restart option, highlighted. False when the service isn't running. */
+    static boolean restartTv(Context ctx) {
+        if (running == null) return false;
+        running.restartUntil = SystemClock.uptimeMillis() + FIND_RESTART_MS;
+        running.restartFocused = false;
+        ctx.startActivity(new Intent(DEVICE_SETTINGS)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+        running.handler.removeCallbacks(running.restartStep);
+        running.handler.postDelayed(running.restartStep, RESTART_TRY_MS);
+        return true;
+    }
+
+    private void restartStep() {
+        if (SystemClock.uptimeMillis() > restartUntil) {
+            Log.w(TAG, "restart: gave up, " + (restartFocused ? "no Restart dialog" : "Restart not found"));
+            return;
+        }
+        AccessibilityNodeInfo root = getRootInActiveWindow();
+        boolean inSettings = root != null && AMAZON_SETTINGS.contentEquals(String.valueOf(root.getPackageName()));
+        if (!inSettings) {
+            if (restartFocused) {
+                Log.i(TAG, "restart: left Amazon's Settings");   // Back, or Home
+                return;
+            }
+        } else if (!restartFocused) {
+            restartFocused = focusRestartItem(root);
+            if (restartFocused) restartUntil = SystemClock.uptimeMillis() + WAIT_FOR_OK_MS;
+        } else {
+            // Amazon's question: its title is the same label; button1 is the positive button.
+            AccessibilityNodeInfo title = first(root, "android:id/alertTitle");
+            if (title != null) {
+                AccessibilityNodeInfo ok = first(root, "android:id/button1");
+                if (isRestartLabel(title.getText()) && ok != null && isRestartLabel(ok.getText())) {
+                    Log.i(TAG, "restart: highlighting Restart in the dialog");
+                    ok.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
+                }
+                return;
+            }
+        }
+        handler.postDelayed(restartStep, RESTART_TRY_MS);
+    }
+
+    /** Highlights Restart in the list, scrolling down a page while it isn't there yet. */
+    private static boolean focusRestartItem(AccessibilityNodeInfo root) {
+        for (AccessibilityNodeInfo item : root.findAccessibilityNodeInfosByViewId(AMAZON_SETTINGS + ":id/action_title")) {
+            if (!isRestartLabel(item.getText())) continue;
+            AccessibilityNodeInfo row = item;
+            while (row != null && !row.isClickable()) row = row.getParent();
+            if (row != null && row.performAction(AccessibilityNodeInfo.ACTION_FOCUS)) {
+                Log.i(TAG, "restart: highlighted Restart");
+                return true;
+            }
+            return false;
+        }
+        AccessibilityNodeInfo list = first(root, AMAZON_SETTINGS + ":id/list");
+        if (list != null) list.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+        return false;
+    }
+
+    private static AccessibilityNodeInfo first(AccessibilityNodeInfo root, String viewId) {
+        java.util.List<AccessibilityNodeInfo> found = root.findAccessibilityNodeInfosByViewId(viewId);
+        return found.isEmpty() ? null : found.get(0);
+    }
+
+    private static boolean isRestartLabel(CharSequence text) {
+        if (text == null) return false;
+        for (String label : RESTART_LABELS) if (label.contentEquals(text.toString().trim())) return true;
+        return false;
     }
 
     @Override

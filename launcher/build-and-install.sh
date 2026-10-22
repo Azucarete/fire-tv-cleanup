@@ -5,6 +5,8 @@
 # (STOCK_LAUNCHER, default com.google.android.tvlauncher).
 # Fire TV: never touches Amazon's launcher, which also hosts Settings. Instead it turns on the
 # launcher's HomeRedirectService and its photo screensaver. See "Fire TV" in the README.
+# The service is turned off for a few seconds and back on: switched straight back, Fire OS keeps the settings
+# it read before the update (res/xml/home_redirect_service.xml), such as being allowed to read the screen.
 set -euo pipefail
 cd "$(dirname "$0")"
 : "${TV_HOST:?set TV_HOST to the TV IP address, e.g. TV_HOST=192.168.1.50 $0}"
@@ -26,6 +28,7 @@ if [ "$MAKER" = "Amazon" ]; then
     "pm grant com.gathin.tvhome android.permission.WRITE_SECURE_SETTINGS" \
     "appops set com.gathin.tvhome GET_USAGE_STATS allow" \
     "settings put secure enabled_accessibility_services ''" \
+    "sleep 3" \
     "settings put secure enabled_accessibility_services com.gathin.tvhome/com.gathin.tvhome.HomeRedirectService" \
     "settings put secure accessibility_enabled 1" \
     "settings put secure screensaver_components com.gathin.tvhome/com.gathin.tvhome.PhotoDream" \

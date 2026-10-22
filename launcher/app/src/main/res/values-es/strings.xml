@@ -41,7 +41,7 @@
     <string name="hide_input">Ocultar entrada</string>
     <string name="hidden_inputs">Entradas ocultas (%1$d)</string>
     <string name="save">Guardar</string>
-    <string name="restart_hint">Encendida desde hace %1$d días · reiníciala para que vaya fluida</string>
+    <string name="restart_hint">Encendida desde hace %1$d días · reiníciala (Menú sobre el engranaje) para que vaya fluida</string>
     <string name="sleep_timer">Temporizador de apagado</string>
     <string name="sleep_minutes">%1$d min</string>
     <string name="sleep_hours">%1$d h</string>
@@ -57,4 +57,6 @@
     <string name="offline_body">La tele no está conectada a ninguna red. Para elegir tu Wi-Fi, usa el botón del Wi-Fi de arriba a la derecha.</string>
     <string name="no_internet_title">Sin internet</string>
     <string name="no_internet_body">La tele está conectada al Wi-Fi, pero no llega a internet. Prueba a apagar el router y volver a encenderlo.</string>
+    <string name="restart_tv">Reiniciar la tele</string>
+    <string name="restart_failed">No se pudo reiniciar: el servicio del botón Inicio está desactivado</string>
 </resources>
