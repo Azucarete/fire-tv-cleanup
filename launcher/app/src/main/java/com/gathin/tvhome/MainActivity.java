@@ -276,10 +276,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         if (cm != null) cm.registerDefaultNetworkCallback(networkCallback);
 
-        // Return to the tile we left from, or the first one.
+        // Return to the tile or top-bar button we left from (Settings, Wi-Fi, an input…), else the last tile.
         grid.post(() -> {
             View focused = getCurrentFocus();
-            if (focused != null && grid.findContainingViewHolder(focused) != null) return;
+            if (focused != null && (grid.findContainingViewHolder(focused) != null
+                    || focused.getParent() == findViewById(R.id.topButtons))) return;
             focusTile(lastFocused);
         });
     }
