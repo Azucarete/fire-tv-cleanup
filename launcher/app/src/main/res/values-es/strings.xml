@@ -60,6 +60,13 @@
     <string name="sleep_warning_title">La tele se apaga en %1$s</string>
     <string name="sleep_warning_hint">¿Sigues viendo? Pulsa OK para tener más tiempo, o Atrás para cerrar este aviso.</string>
     <string name="sleep_warning_extend">Seguir 15 min más</string>
+    <string name="standby_row">Apagarse sola: %1$s</string>
+    <string name="standby_after">a los %1$s</string>
+    <string name="standby_never">nunca</string>
+    <string name="standby_after_option">A los %1$s</string>
+    <string name="standby_never_option">Nunca</string>
+    <string name="standby_set_after">La tele se apagará sola a los %1$s sin tocar el mando</string>
+    <string name="standby_set_never">La tele ya no se apagará sola: apágala tú con el mando</string>
     <string name="settings_network">Red</string>
     <string name="settings_device">Dispositivo y software</string>
     <string name="settings_apps">Apps</string>

@@ -62,6 +62,13 @@
     <string name="sleep_warning_title">The TV turns off in %1$s</string>
     <string name="sleep_warning_hint">Still watching? Press OK for more time, or Back to close this.</string>
     <string name="sleep_warning_extend">15 more minutes</string>
+    <string name="standby_row">Turn off by itself: %1$s</string>
+    <string name="standby_after">after %1$s</string>
+    <string name="standby_never">never</string>
+    <string name="standby_after_option">After %1$s</string>
+    <string name="standby_never_option">Never</string>
+    <string name="standby_set_after">The TV will turn off after %1$s without a key press</string>
+    <string name="standby_set_never">The TV won\'t turn off by itself: turn it off with the remote</string>
     <string name="settings_network">Network</string>
     <string name="settings_device">Device &amp; Software</string>
     <string name="settings_apps">Apps</string>

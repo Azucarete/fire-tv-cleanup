@@ -586,6 +586,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         addInputRow(rows, popup, R.drawable.ic_screensaver, getString(R.string.screensaver_after, duration(screensaverMinutes())), -1,
                 () -> showScreensaverTimes(anchor));
+        int standby = standbyMinutes();
+        addInputRow(rows, popup, R.drawable.ic_power, getString(R.string.standby_row, standby > 0
+                        ? getString(R.string.standby_after, duration(standby)) : getString(R.string.standby_never)), -1,
+                () -> showStandbyOptions(anchor));
         addInputRow(rows, popup, R.drawable.ic_restart_tv, getString(R.string.restart_tv), -1, this::restartTv);
         popup.showAsDropDown(anchor, anchor.getWidth() - width, (int) (10 * density), Gravity.START);
         rows.getChildAt(0).requestFocus();
@@ -926,6 +930,74 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         popup.showAsDropDown(anchor, anchor.getWidth() - width, (int) (10 * density), Gravity.START);
         rows.getChildAt(focus).requestFocus();
+    }
+
+    // ---- turning off by itself --------------------------------------------------------------------
+
+    // Standby comes SLEEP_TIMEOUT after the last key press, screensaver or not; -1 is never (Android's default),
+    // and the screensaver then runs until the TV is turned off by hand. Fire OS's Settings have no way to choose
+    // this. While it is off, the time it used to wait after the screensaver started is kept here, to go back to.
+    private static final String PREF_STANDBY_GAP = "standby_gap_ms";
+    private static final int DEFAULT_STANDBY_GAP_MS = 9 * (int) MINUTE_MS;   // Fire OS's: 5 min, then 14
+
+    /** Minutes without a key press before standby, or -1 for never. */
+    private int standbyMinutes() {
+        int ms = Settings.Secure.getInt(getContentResolver(), SLEEP_TIMEOUT, -1);
+        return ms > 0 ? ms / (int) MINUTE_MS : -1;
+    }
+
+    /** Under the Settings button's menu: turn off by itself after a while, or never. */
+    private void showStandbyOptions(View anchor) {
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        int width = (int) (230 * density);
+        final PopupWindow popup = new PopupWindow(panel, width, ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        popup.setOutsideTouchable(true);
+        popup.setAnimationStyle(0);
+        popup.setElevation(0f);
+        int current = standbyMinutes();
+        int after = current > 0 ? current
+                : screensaverMinutes() + prefs().getInt(PREF_STANDBY_GAP, DEFAULT_STANDBY_GAP_MS) / (int) MINUTE_MS;
+        addInputRow(rows, popup, current > 0 ? R.drawable.ic_check : R.drawable.ic_schedule,
+                getString(R.string.standby_after_option, duration(after)), -1, () -> {
+                    if (setStandby(true)) {
+                        Toast.makeText(this, getString(R.string.standby_set_after, duration(standbyMinutes())),
+                                Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(this, R.string.redirect_needs_permission, Toast.LENGTH_LONG).show();
+                    }
+                });
+        addInputRow(rows, popup, current > 0 ? R.drawable.ic_close : R.drawable.ic_check,
+                getString(R.string.standby_never_option), -1, () -> {
+                    if (setStandby(false)) {
+                        Toast.makeText(this, R.string.standby_set_never, Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(this, R.string.redirect_needs_permission, Toast.LENGTH_LONG).show();
+                    }
+                });
+        popup.showAsDropDown(anchor, anchor.getWidth() - width, (int) (10 * density), Gravity.START);
+        rows.getChildAt(current > 0 ? 0 : 1).requestFocus();
+    }
+
+    /** Turns standby after a while on (the time it had before) or off. Needs WRITE_SECURE_SETTINGS. */
+    private boolean setStandby(boolean on) {
+        ContentResolver cr = getContentResolver();
+        int screenOff = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, DEFAULT_SCREEN_OFF_MS);
+        int current = Settings.Secure.getInt(cr, SLEEP_TIMEOUT, -1);
+        try {
+            if (on) {
+                if (current > 0) return true;
+                Settings.Secure.putInt(cr, SLEEP_TIMEOUT,
+                        screenOff + prefs().getInt(PREF_STANDBY_GAP, DEFAULT_STANDBY_GAP_MS));
+            } else {
+                if (current > 0) prefs().edit().putInt(PREF_STANDBY_GAP, Math.max((int) MINUTE_MS, current - screenOff)).apply();
+                Settings.Secure.putInt(cr, SLEEP_TIMEOUT, -1);
+            }
+            return true;
+        } catch (SecurityException e) {
+            return false;
+        }
     }
 
     /**
