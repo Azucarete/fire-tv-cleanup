@@ -49,6 +49,7 @@ PC nuevo, acepta en la tele el aviso «¿Permitir depuración USB?».
 | Número de apps por fila | `columns` en `launcher/app/src/main/res/values/config.xml` y `instalar.bat`. |
 | Ocultar una app | En la tele: Menú sobre la app > Ocultar app. Para recuperarla: Menú sobre el engranaje > Apps ocultas. |
 | Temporizador de apagado | Botón de la luna, arriba a la derecha: 15 min a 2 h. El botón muestra lo que falta; funciona aunque estés en otra app. Un minuto antes sale un aviso con cuenta atrás: OK te da 15 min más, Atrás lo cierra. Mantener pulsado OK sobre la luna repite el último temporizador sin abrir el menú. Para quitarlo, vuelve a pulsar la luna. Si apagas la tele a mano, el temporizador se borra. |
+| Ajustes | OK sobre el engranaje: Red, Dispositivo y software, Apps y Mandos y Bluetooth se abren directamente, sin pasar por la pantalla de inicio de Amazon ni sus anuncios. «Más ajustes» abre los de Amazon como siempre, para lo demás (pantalla, sonido, cuenta…): Fire OS solo deja abrir esas secciones a sus propias apps. |
 | Tiempo del salvapantallas | En la tele: Menú sobre el engranaje > «Salvapantallas a los…» (5, 10, 15 o 30 min). La tele se apaga sola unos 9 min después de que salga el salvapantallas, igual que antes. |
 | Aviso de «sin internet» | Si la tele lleva 20 s sin internet, sale un aviso grande en el centro con qué pasa y qué probar. Desaparece solo al volver la conexión. |
 | Aviso de reinicio | Si la tele lleva 7 días o más sin reiniciarse, aparece un aviso bajo el reloj. Desaparece al reiniciarla. |

@@ -226,7 +226,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return true;
         });
         btnWifi.setOnClickListener(v -> open(new Intent(Settings.ACTION_WIFI_SETTINGS)));
-        btnSettings.setOnClickListener(v -> open(new Intent(Settings.ACTION_SETTINGS)));
+        btnSettings.setOnClickListener(v -> showSettingsMenu(v));
         btnSettings.setOnLongClickListener(v -> {
             showHomeScreenMenu(v);
             return true;
@@ -522,6 +522,42 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         panel.setTranslationY(8 * density);
         popup.showAtLocation(root, Gravity.NO_GRAVITY, x, y);
         panel.animate().alpha(1f).translationY(0f).setDuration(200)
+                .setInterpolator(new DecelerateInterpolator(1.6f)).start();
+        rows.getChildAt(0).requestFocus();
+    }
+
+    // Fire OS has no Settings app of its own: Settings is a tab of Amazon's home screen, ads included. These
+    // sections open on their own instead, full screen; the rest (picture, sound, account…) need an Amazon-only
+    // permission (com.amazon.tv.permission.LAUNCHER_SETTINGS), so "More settings" still goes through Amazon's.
+    private static final String AMAZON_SETTINGS_ACTION = "com.amazon.device.settings.action.";
+
+    /** OK on the Settings button: the sections of Amazon's Settings that open without its home screen. */
+    private void showSettingsMenu(View anchor) {
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        int width = (int) (330 * density);   // fits "Más ajustes (pantalla, sonido…)"
+        final PopupWindow popup = new PopupWindow(panel, width, ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        popup.setOutsideTouchable(true);
+        popup.setAnimationStyle(0);
+        popup.setElevation(0f);
+        addInputRow(rows, popup, R.drawable.ic_wifi, getString(R.string.settings_network), -1,
+                () -> open(new Intent(Settings.ACTION_WIFI_SETTINGS)));
+        addInputRow(rows, popup, R.drawable.ic_device, getString(R.string.settings_device), -1,
+                () -> open(new Intent(AMAZON_SETTINGS_ACTION + "DEVICE")));
+        addInputRow(rows, popup, R.drawable.ic_apps, getString(R.string.settings_apps), -1,
+                () -> open(new Intent(AMAZON_SETTINGS_ACTION + "APPLICATIONS")));
+        addInputRow(rows, popup, R.drawable.ic_remote, getString(R.string.settings_controllers), -1,
+                () -> open(new Intent(AMAZON_SETTINGS_ACTION + "CONTROLLERS")));
+        addSeparator(rows);
+        addInputRow(rows, popup, R.drawable.ic_settings, getString(R.string.settings_more), -1,
+                () -> open(new Intent(Settings.ACTION_SETTINGS)));
+        panel.setAlpha(0f);
+        panel.setPivotY(0f);
+        panel.setScaleY(0.92f);
+        panel.setTranslationY(-8 * density);
+        popup.showAsDropDown(anchor, anchor.getWidth() - width, (int) (10 * density), Gravity.START);
+        panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(220)
                 .setInterpolator(new DecelerateInterpolator(1.6f)).start();
         rows.getChildAt(0).requestFocus();
     }
