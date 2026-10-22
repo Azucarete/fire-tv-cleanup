@@ -57,6 +57,9 @@
     <string name="offline_body">La tele no está conectada a ninguna red. Para elegir tu Wi-Fi, usa el botón del Wi-Fi de arriba a la derecha.</string>
     <string name="no_internet_title">Sin internet</string>
     <string name="no_internet_body">La tele está conectada al Wi-Fi, pero no llega a internet. Prueba a apagar el router y volver a encenderlo.</string>
+    <string name="sleep_warning_title">La tele se apaga en %1$s</string>
+    <string name="sleep_warning_hint">¿Sigues viendo? Pulsa OK para tener más tiempo, o Atrás para cerrar este aviso.</string>
+    <string name="sleep_warning_extend">Seguir 15 min más</string>
     <string name="restart_tv">Reiniciar la tele</string>
     <string name="restart_failed">No se pudo reiniciar: el servicio del botón Inicio está desactivado</string>
 </resources>

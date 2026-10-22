@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A minute before the sleep timer turns the TV off, over any app (SleepWarning). OK on the button gives 15 more
+     minutes; Back closes the card and leaves the timer running. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="460dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/glass_panel"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingTop="20dp"
+    android:paddingBottom="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp">
+
+        <ImageView
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@drawable/ic_sleep"
+            android:importantForAccessibility="no" />
+
+        <TextView
+            android:id="@+id/warningTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:textColor="#FFFFFFFF"
+            android:textSize="22sp"
+            android:fontFamily="@font/open_sans"
+            android:fontVariationSettings="'wght' 650" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/warningHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:text="@string/sleep_warning_hint"
+        android:textColor="#B3FFFFFF"
+        android:textSize="14sp"
+        android:fontFamily="@font/open_sans"
+        android:fontVariationSettings="'wght' 450" />
+
+    <TextView
+        android:id="@+id/warningExtend"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="14dp"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:drawableStart="@drawable/ic_schedule"
+        android:drawablePadding="10dp"
+        android:drawableTint="@drawable/pill_text"
+        android:background="@drawable/input_row_bg"
+        android:text="@string/sleep_warning_extend"
+        android:textColor="@drawable/pill_text"
+        android:textSize="16sp"
+        android:fontFamily="@font/open_sans"
+        android:fontVariationSettings="'wght' 600"
+        android:focusable="true"
+        android:clickable="true" />
+</LinearLayout>

@@ -9,12 +9,14 @@ import android.content.SharedPreferences;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.widget.Toast;
 
 /**
  * Turns the TV off after a chosen time, set from the moon button on the home screen. Keeps running over other
- * apps: an alarm shows a warning a minute before, then puts the TV to sleep through HomeRedirectService (an
+ * apps: an alarm shows a warning a minute before (SleepWarning, which can extend it), then puts the TV to sleep
+ * through HomeRedirectService (an
  * accessibility service may lock the screen, which on Android 9 is sleep; nothing else lets an app turn the TV
  * off). Turning the TV off by hand, or restarting it, cancels the timer.
  */
@@ -34,7 +36,13 @@ public class SleepTimer extends BroadcastReceiver {
         schedule(ctx, at);
     }
 
+    /** Sets the alarms again for a timer still running: Android drops an app's alarms when it is updated. */
+    static void restore(Context ctx) {
+        if (remainingMs(ctx) > 0) schedule(ctx, prefs(ctx).getLong(PREF_AT, 0));
+    }
+
     static void cancel(Context ctx) {
+        SleepWarning.hide();
         if (!prefs(ctx).contains(PREF_AT)) return;
         prefs(ctx).edit().remove(PREF_AT).remove(PREF_BOOT).apply();
         AlarmManager am = ctx.getSystemService(AlarmManager.class);
@@ -52,6 +60,12 @@ public class SleepTimer extends BroadcastReceiver {
             return -1;
         }
         return Math.max(0, p.getLong(PREF_AT, 0) - SystemClock.elapsedRealtime());
+    }
+
+    /** When the TV will turn off, as the home screen's clock shows it: "01:00", not "1:00". */
+    static String endTimeText(Context ctx) {
+        long at = System.currentTimeMillis() + Math.max(0, remainingMs(ctx));
+        return DateFormat.format(DateFormat.is24HourFormat(ctx) ? "HH:mm" : "h:mm a", at).toString();
     }
 
     private static void schedule(Context ctx, long at) {
@@ -75,7 +89,9 @@ public class SleepTimer extends BroadcastReceiver {
             return;
         }
         if (ACTION_WARN.equals(intent.getAction())) {
-            Toast.makeText(ctx, R.string.sleep_warning, Toast.LENGTH_LONG).show();
+            if (!HomeRedirectService.showSleepWarning()) {
+                Toast.makeText(ctx, R.string.sleep_warning, Toast.LENGTH_LONG).show();
+            }
             return;
         }
         cancel(ctx);

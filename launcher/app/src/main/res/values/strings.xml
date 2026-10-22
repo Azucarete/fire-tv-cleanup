@@ -59,6 +59,9 @@
     <string name="offline_body">The TV isn\'t connected to any network. To pick a Wi-Fi network, use the Wi-Fi button at the top right.</string>
     <string name="no_internet_title">No internet</string>
     <string name="no_internet_body">The TV is connected to Wi-Fi but can\'t reach the internet. Try turning the router off and on again.</string>
+    <string name="sleep_warning_title">The TV turns off in %1$s</string>
+    <string name="sleep_warning_hint">Still watching? Press OK for more time, or Back to close this.</string>
+    <string name="sleep_warning_extend">15 more minutes</string>
     <string name="restart_tv">Restart the TV</string>
     <string name="restart_failed">Couldn\'t restart: the Home button service is off</string>
 </resources>

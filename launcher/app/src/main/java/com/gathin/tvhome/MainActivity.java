@@ -26,7 +26,6 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.SpannableString;
-import android.text.format.DateFormat;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.view.Gravity;
@@ -222,6 +221,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         final View leftmost = hasStore ? btnStore : btnInputs;
         btnInputs.setOnClickListener(v -> showInputs());
         btnSleep.setOnClickListener(v -> showSleepTimer());
+        btnSleep.setOnLongClickListener(v -> {
+            repeatSleepTimer();
+            return true;
+        });
         btnWifi.setOnClickListener(v -> open(new Intent(Settings.ACTION_WIFI_SETTINGS)));
         btnSettings.setOnClickListener(v -> open(new Intent(Settings.ACTION_SETTINGS)));
         btnSettings.setOnLongClickListener(v -> {
@@ -289,6 +292,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         handler.removeCallbacks(offlineRecheck);
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         if (cm != null) cm.unregisterNetworkCallback(networkCallback);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        // Back from the sleep timer's warning card, which may have added time while this screen stayed resumed.
+        if (hasFocus) updateSleepButton();
     }
 
     @Override
@@ -792,6 +802,23 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         return getString(R.string.sleep_hours_minutes, minutes / 60, minutes % 60);
     }
 
+    // The last time picked from the moon menu, which holding OK on the moon sets again without the menu.
+    private static final String PREF_SLEEP_LAST = "sleep_last_minutes";
+
+    private void startSleepTimer(int minutes) {
+        SleepTimer.set(this, minutes);
+        prefs().edit().putInt(PREF_SLEEP_LAST, minutes).apply();
+        updateSleepButton();
+        Toast.makeText(this, getString(R.string.sleep_set, SleepTimer.endTimeText(this)), Toast.LENGTH_LONG).show();
+    }
+
+    /** Hold OK on the moon: the last timer again, or the menu when none was ever set. */
+    private void repeatSleepTimer() {
+        int last = prefs().getInt(PREF_SLEEP_LAST, 0);
+        if (last > 0) startSleepTimer(last);
+        else showSleepTimer();
+    }
+
     /** Dropdown under the moon button: how long until the TV turns off, and a way to call it off. */
     private void showSleepTimer() {
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
@@ -812,14 +839,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             addSeparator(rows);
         }
         for (int minutes : SLEEP_MINUTES) {
-            addInputRow(rows, popup, R.drawable.ic_schedule, duration(minutes), -1, () -> {
-                SleepTimer.set(this, minutes);
-                updateSleepButton();
-                // Same format as the clock (res/layout/activity_main.xml): "01:00", not "1:00".
-                String at = DateFormat.format(DateFormat.is24HourFormat(this) ? "HH:mm" : "h:mm a",
-                        System.currentTimeMillis() + minutes * MINUTE_MS).toString();
-                Toast.makeText(this, getString(R.string.sleep_set, at), Toast.LENGTH_LONG).show();
-            });
+            addInputRow(rows, popup, R.drawable.ic_schedule, duration(minutes), -1, () -> startSleepTimer(minutes));
         }
         panel.setAlpha(0f);
         panel.setPivotY(0f);

@@ -77,6 +77,11 @@ public class HomeRedirectService extends AccessibilityService {
         return running != null && running.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN);
     }
 
+    /** The sleep timer's last-minute card, over any app. False when the service isn't running. */
+    static boolean showSleepWarning() {
+        return running != null && SleepWarning.show(running);
+    }
+
     // ---- restart ---------------------------------------------------------------------------------
 
     // Only Amazon's Settings may restart the TV (android.permission.REBOOT), and its list only reacts to the
@@ -168,6 +173,7 @@ public class HomeRedirectService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         running = this;
+        SleepTimer.restore(this);   // connects again after every launcher update
         IntentFilter screen = new IntentFilter(Intent.ACTION_SCREEN_ON);
         screen.addAction(Intent.ACTION_SCREEN_OFF);
         registerReceiver(screenOn, screen);
