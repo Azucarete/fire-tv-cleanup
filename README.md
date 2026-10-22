@@ -42,7 +42,8 @@ PC nuevo, acepta en la tele el aviso «¿Permitir depuración USB?».
 **Cambiar cosas**
 | Qué | Cómo |
 |---|---|
-| Fondos | Cambia las fotos de `misfondos/` (`mañana.jpg` 5–12 h, `tarde.jpg` 12–17 h, `atardecer.jpg` 17–22 h, `noche.jpg` 22–5 h; 1920×1080) y ejecuta `instalar.bat`. El salvapantallas usa esas mismas 4 fotos. |
+| Fondos | Cambia las fotos de `misfondos/launcher/` (`mañana.jpg` 5–12 h, `tarde.jpg` 12–17 h, `atardecer.jpg` 17–22 h, `noche.jpg` 22–5 h; 1920×1080) y ejecuta `instalar.bat`. |
+| Salvapantallas | Pon las fotos que quieras en `misfondos/salvapantallas/` (JPG o PNG, mejor horizontales y de 1920×1080) y ejecuta `instalar.bat`. Pasan en orden aleatorio, 20 s cada una. Para quitar una, sácala de la carpeta y vuelve a ejecutar `instalar.bat`. Si la carpeta está vacía, el salvapantallas usa los 4 fondos. |
 | Saludo | `tvhome.greeting=` en `launcher/local.properties` (en Java, `¡` se escribe `¡`) y `instalar.bat`. |
 | Dock | En la tele: mantén pulsado OK (o Menú) sobre una app para fijarla, quitarla o moverla. `comprobar.bat` e `instalar.bat` guardan ese orden en `mi-dock.txt`, e `instalar.bat` lo repone si la tele lo ha perdido (por ejemplo, tras restablecerla). |
 | Entradas (HDMI, AV) | Botón del enchufe, arriba a la derecha. La entrada se ve dentro del launcher; Atrás vuelve. Para ponerle nombre (PlayStation, Xbox…) u ocultarla, pulsa Menú sobre ella; las ocultas se recuperan al final del menú. La TV en directo (antena) se abre desde Amazon: Fire OS no deja abrir su guía a otras apps. |
