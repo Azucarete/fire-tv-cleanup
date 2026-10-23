@@ -15,7 +15,13 @@ export JAVA_HOME="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17}"
 export ANDROID_HOME="${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}"
 export PATH="$JAVA_HOME/bin:$PATH"
 [ -f local.properties ] || echo "sdk.dir=$ANDROID_HOME" > local.properties
-./gradlew assembleDebug -q --console=plain
+# A Gradle daemon left over from an earlier build can go stale and fail with "SDK location not found":
+# stop it and try once more.
+if ! ./gradlew assembleDebug -q --console=plain; then
+  echo "La compilación ha fallado; se reinicia Gradle y se vuelve a intentar..."
+  ./gradlew --stop -q
+  ./gradlew assembleDebug -q --console=plain
+fi
 PY=../tools/venv/bin/python
 [ -x "$PY" ] || PY=../tools/venv/Scripts/python   # Windows venv layout
 APK=app/build/outputs/apk/debug/app-debug.apk
